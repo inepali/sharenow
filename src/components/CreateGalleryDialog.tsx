@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 
 interface CreateGalleryDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ export const CreateGalleryDialog = ({
   const [weddingCouple, setWeddingCouple] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [description, setDescription] = useState("");
+  const [coverImage, setCoverImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   const generateSlug = (text: string) => {
@@ -34,6 +36,21 @@ export const CreateGalleryDialog = ({
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
+  };
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Cover image must be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+      setCoverImage(file);
+    }
   };
 
   const handleCreate = async () => {
@@ -53,6 +70,25 @@ export const CreateGalleryDialog = ({
       }
 
       const slug = generateSlug(title) + "-" + Date.now().toString(36);
+      let coverImagePath: string | null = null;
+
+      // Upload cover image if provided
+      if (coverImage) {
+        const fileExt = coverImage.name.split(".").pop();
+        const fileName = `${slug}-cover.${fileExt}`;
+        const filePath = `covers/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("gallery-photos")
+          .upload(filePath, coverImage);
+
+        if (uploadError) {
+          toast.error("Failed to upload cover image");
+          throw uploadError;
+        }
+
+        coverImagePath = filePath;
+      }
 
       const { error } = await supabase
         .from("galleries")
@@ -62,6 +98,7 @@ export const CreateGalleryDialog = ({
           wedding_couple: weddingCouple.trim() || null,
           wedding_date: weddingDate || null,
           description: description.trim() || null,
+          cover_image_path: coverImagePath,
           slug,
           is_active: true,
         });
@@ -74,6 +111,7 @@ export const CreateGalleryDialog = ({
       setWeddingCouple("");
       setWeddingDate("");
       setDescription("");
+      setCoverImage(null);
       
       onGalleryCreated();
     } catch (error: any) {
@@ -132,6 +170,33 @@ export const CreateGalleryDialog = ({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="cover-image">Cover Image</Label>
+            <div className="flex items-center gap-3">
+              <Input
+                id="cover-image"
+                type="file"
+                accept="image/*"
+                onChange={handleCoverImageChange}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("cover-image")?.click()}
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {coverImage ? coverImage.name : "Upload Cover Image"}
+              </Button>
+            </div>
+            {coverImage && (
+              <p className="text-sm text-muted-foreground">
+                Selected: {coverImage.name} ({(coverImage.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
@@ -152,4 +217,4 @@ export const CreateGalleryDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

@@ -55,6 +55,7 @@ export type Database = {
       }
       galleries: {
         Row: {
+          cover_image_path: string | null
           created_at: string
           description: string | null
           id: string
@@ -67,6 +68,7 @@ export type Database = {
           wedding_date: string | null
         }
         Insert: {
+          cover_image_path?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -79,6 +81,7 @@ export type Database = {
           wedding_date?: string | null
         }
         Update: {
+          cover_image_path?: string | null
           created_at?: string
           description?: string | null
           id?: string

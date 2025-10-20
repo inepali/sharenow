@@ -3,8 +3,10 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Download, Camera } from "lucide-react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 
 interface Gallery {
   id: string;
@@ -147,6 +149,60 @@ const ClientGallery = () => {
     return data.publicUrl;
   };
 
+  const downloadImage = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success("Image downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download image");
+    }
+  };
+
+  const downloadGallery = async () => {
+    if (!gallery || sections.length === 0) return;
+
+    toast.info("Preparing gallery download...");
+    
+    try {
+      const zip = new JSZip();
+      
+      for (const section of sections) {
+        const sectionFolder = zip.folder(section.title);
+        
+        for (const photo of section.photos) {
+          const url = getPhotoUrl(photo.storage_path);
+          const response = await fetch(url);
+          const blob = await response.blob();
+          const filename = photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`;
+          sectionFolder?.file(filename, blob);
+        }
+      }
+      
+      const content = await zip.generateAsync({ type: "blob" });
+      const blobUrl = window.URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `${slug}-gallery.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success("Gallery downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download gallery");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
@@ -181,7 +237,7 @@ const ClientGallery = () => {
             <p className="text-xl text-foreground/80 mb-2">{gallery.wedding_couple}</p>
           )}
           {gallery.wedding_date && (
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               {new Date(gallery.wedding_date).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -190,64 +246,17 @@ const ClientGallery = () => {
             </p>
           )}
           {gallery.description && (
-            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">{gallery.description}</p>
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">{gallery.description}</p>
           )}
+          <Button onClick={downloadGallery} variant="secondary" size="lg" className="mt-4">
+            <Download className="w-4 h-4 mr-2" />
+            Download Entire Gallery
+          </Button>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        {sections.map((section) => (
-          <section key={section.id} className="mb-16">
-            <h2 className="text-3xl font-serif mb-6 text-center">{section.title}</h2>
-            
-            {section.photos.length === 0 ? (
-              <Card className="p-8 text-center gradient-card">
-                <p className="text-muted-foreground">No photos in this section yet</p>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {section.photos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
-                  >
-                    <img
-                      src={getPhotoUrl(photo.storage_path)}
-                      alt={photo.caption || "Wedding photo"}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
-                      <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="flex-1"
-                          onClick={() => toggleFavorite(photo.id)}
-                        >
-                          <Heart
-                            className={`w-4 h-4 mr-2 ${
-                              favorites.has(photo.id) ? "fill-primary text-primary" : ""
-                            }`}
-                          />
-                          {favorites.has(photo.id) ? "Favorited" : "Favorite"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
-
-        {sections.length === 0 && (
+        {sections.length === 0 ? (
           <Card className="p-12 text-center gradient-card">
             <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-2xl font-serif mb-2">Gallery Coming Soon</h3>
@@ -255,6 +264,70 @@ const ClientGallery = () => {
               Photos will be added to this gallery shortly. Check back soon!
             </p>
           </Card>
+        ) : (
+          <Tabs defaultValue={sections[0]?.id} className="w-full">
+            <TabsList className="w-full justify-start mb-8 flex-wrap h-auto">
+              {sections.map((section) => (
+                <TabsTrigger key={section.id} value={section.id} className="px-6">
+                  {section.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {sections.map((section) => (
+              <TabsContent key={section.id} value={section.id}>
+                <h2 className="text-3xl font-serif mb-6 text-center">{section.title}</h2>
+                
+                {section.photos.length === 0 ? (
+                  <Card className="p-8 text-center gradient-card">
+                    <p className="text-muted-foreground">No photos in this section yet</p>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {section.photos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
+                      >
+                        <img
+                          src={getPhotoUrl(photo.storage_path)}
+                          alt={photo.caption || "Wedding photo"}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
+                          <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="flex-1"
+                              onClick={() => toggleFavorite(photo.id)}
+                            >
+                              <Heart
+                                className={`w-4 h-4 mr-2 ${
+                                  favorites.has(photo.id) ? "fill-primary text-primary" : ""
+                                }`}
+                              />
+                              {favorites.has(photo.id) ? "Favorited" : "Favorite"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => downloadImage(
+                                getPhotoUrl(photo.storage_path),
+                                photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
+                              )}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
         )}
       </main>
     </div>

@@ -16,6 +16,7 @@ interface Gallery {
   slug: string;
   is_active: boolean;
   created_at: string;
+  cover_image_path: string | null;
 }
 
 const Dashboard = () => {
