@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, X, Download } from "lucide-react";
+import { Upload, X, Download, Image } from "lucide-react";
 
 interface Photo {
   id: string;
@@ -21,10 +22,24 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPhotos();
+    fetchGalleryCover();
   }, [sectionId]);
+
+  const fetchGalleryCover = async () => {
+    const { data, error } = await supabase
+      .from("galleries")
+      .select("cover_image_path")
+      .eq("id", galleryId)
+      .single();
+
+    if (!error && data) {
+      setCurrentCoverPath(data.cover_image_path);
+    }
+  };
 
   const fetchPhotos = async () => {
     setLoading(true);
@@ -108,6 +123,20 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     }
   };
 
+  const handleSetAsCover = async (photo: Photo) => {
+    const { error } = await supabase
+      .from("galleries")
+      .update({ cover_image_path: photo.storage_path })
+      .eq("id", galleryId);
+
+    if (error) {
+      toast.error("Failed to set cover image");
+    } else {
+      setCurrentCoverPath(photo.storage_path);
+      toast.success("Cover image updated");
+    }
+  };
+
   const getPhotoUrl = (path: string) => {
     const { data } = supabase.storage
       .from("gallery-photos")
@@ -160,34 +189,55 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-medium transition-smooth"
-              >
-                <img
-                  src={getPhotoUrl(photo.storage_path)}
-                  alt={photo.caption || "Wedding photo"}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth flex items-center justify-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(photo)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+            {photos.map((photo) => {
+              const isCover = currentCoverPath === photo.storage_path;
+              return (
+                <div
+                  key={photo.id}
+                  className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-medium transition-smooth"
+                >
+                  {isCover && (
+                    <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground">
+                      Cover Image
+                    </Badge>
+                  )}
+                  <img
+                    src={getPhotoUrl(photo.storage_path)}
+                    alt={photo.caption || "Wedding photo"}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center gap-2 p-2">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(photo)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {!isCover && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => handleSetAsCover(photo)}
+                      >
+                        <Image className="w-4 h-4 mr-2" />
+                        Set as Cover
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
