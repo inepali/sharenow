@@ -11,7 +11,7 @@ import JSZip from "jszip";
 interface Gallery {
   id: string;
   title: string;
-  wedding_couple: string | null;
+  gallery_type: string | null;
   wedding_date: string | null;
   description: string | null;
 }
@@ -233,8 +233,8 @@ const ClientGallery = () => {
             <Camera className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-3">{gallery.title}</h1>
-          {gallery.wedding_couple && (
-            <p className="text-xl text-foreground/80 mb-2">{gallery.wedding_couple}</p>
+          {gallery.gallery_type && (
+            <p className="text-xl text-foreground/80 mb-2">{gallery.gallery_type}</p>
           )}
           {gallery.wedding_date && (
             <p className="text-muted-foreground mb-4">

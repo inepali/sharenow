@@ -9,7 +9,7 @@ interface GalleryCardProps {
   gallery: {
     id: string;
     title: string;
-    wedding_couple: string | null;
+    gallery_type: string | null;
     wedding_date: string | null;
     slug: string;
     is_active: boolean;
@@ -60,10 +60,10 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4 text-white">
             <h3 className="text-2xl font-serif mb-1">{gallery.title}</h3>
-            {gallery.wedding_couple && (
+            {gallery.gallery_type && (
               <div className="flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4" />
-                <span>{gallery.wedding_couple}</span>
+                <span>{gallery.gallery_type}</span>
               </div>
             )}
           </div>
@@ -72,10 +72,10 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
         <div className="h-48 bg-gradient-card border-b flex items-center justify-center">
           <div className="text-center p-6">
             <h3 className="text-2xl font-serif text-foreground mb-2">{gallery.title}</h3>
-            {gallery.wedding_couple && (
+            {gallery.gallery_type && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Users className="w-4 h-4" />
-                <span>{gallery.wedding_couple}</span>
+                <span>{gallery.gallery_type}</span>
               </div>
             )}
           </div>

@@ -11,7 +11,7 @@ import { CreateGalleryDialog } from "@/components/CreateGalleryDialog";
 interface Gallery {
   id: string;
   title: string;
-  wedding_couple: string | null;
+  gallery_type: string | null;
   wedding_date: string | null;
   slug: string;
   is_active: boolean;

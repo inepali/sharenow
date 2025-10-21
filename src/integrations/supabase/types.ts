@@ -58,39 +58,39 @@ export type Database = {
           cover_image_path: string | null
           created_at: string
           description: string | null
+          gallery_type: string | null
           id: string
           is_active: boolean
           slug: string
           title: string
           updated_at: string
           vendor_id: string
-          wedding_couple: string | null
           wedding_date: string | null
         }
         Insert: {
           cover_image_path?: string | null
           created_at?: string
           description?: string | null
+          gallery_type?: string | null
           id?: string
           is_active?: boolean
           slug: string
           title: string
           updated_at?: string
           vendor_id: string
-          wedding_couple?: string | null
           wedding_date?: string | null
         }
         Update: {
           cover_image_path?: string | null
           created_at?: string
           description?: string | null
+          gallery_type?: string | null
           id?: string
           is_active?: boolean
           slug?: string
           title?: string
           updated_at?: string
           vendor_id?: string
-          wedding_couple?: string | null
           wedding_date?: string | null
         }
         Relationships: []

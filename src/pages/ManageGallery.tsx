@@ -10,14 +10,29 @@ import { PhotoUploader } from "@/components/PhotoUploader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Gallery {
   id: string;
   title: string;
-  wedding_couple: string | null;
+  gallery_type: string | null;
   wedding_date: string | null;
   slug: string;
 }
+
+const GALLERY_TYPES = [
+  "Adventure", "Anniversary", "Architecture", "Automotive", "Baby", "Baptism/Christening",
+  "Bar/Bat Mitzvah", "Birth", "Birthday", "Boudoir", "Bridal", "Brit", "Business",
+  "Children", "Christmas", "Commercial", "Concert", "Confirmation", "Couples", "Dance",
+  "Editorial", "Elopement", "Engagement", "Equine", "Event", "Family", "Farewell",
+  "Film", "First Communion", "Food", "General", "Graduation", "Headshots", "Holidays",
+  "Interiors", "Landscape", "Lifestyle", "Live Music", "Look Book", "Maternity",
+  "Milestones", "Mini Session", "Modeling", "Newborn", "Other", "Outdoor",
+  "Passion Portrait", "Personal Branding", "Pets", "Photo Booth", "Portraits",
+  "Pre-Wedding", "Products", "Proposal", "Quinceanera", "Real Estate",
+  "Rehearsal Dinner", "Religious", "School", "Seniors", "Sport", "Styled Shoots",
+  "Theater", "Travel", "Video", "Vow Renewal", "Wedding", "Workshop"
+];
 
 const ManageGallery = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +42,7 @@ const ManageGallery = () => {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
-  const [editCouple, setEditCouple] = useState("");
+  const [editGalleryType, setEditGalleryType] = useState("");
   const [editDate, setEditDate] = useState("");
 
   useEffect(() => {
@@ -56,7 +71,7 @@ const ManageGallery = () => {
 
       setGallery(data);
       setEditTitle(data.title);
-      setEditCouple(data.wedding_couple || "");
+      setEditGalleryType(data.gallery_type || "");
       setEditDate(data.wedding_date || "");
     } catch (error: any) {
       toast.error("Failed to load gallery");
@@ -77,7 +92,7 @@ const ManageGallery = () => {
         .from("galleries")
         .update({
           title: editTitle,
-          wedding_couple: editCouple || null,
+          gallery_type: editGalleryType || null,
           wedding_date: editDate || null,
         })
         .eq("id", id);
@@ -87,7 +102,7 @@ const ManageGallery = () => {
       setGallery(prev => prev ? {
         ...prev,
         title: editTitle,
-        wedding_couple: editCouple || null,
+        gallery_type: editGalleryType || null,
         wedding_date: editDate || null,
       } : null);
 
@@ -126,8 +141,8 @@ const ManageGallery = () => {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-serif">{gallery.title}</h1>
-              {gallery.wedding_couple && (
-                <p className="text-muted-foreground mt-1">{gallery.wedding_couple}</p>
+              {gallery.gallery_type && (
+                <p className="text-muted-foreground mt-1">{gallery.gallery_type}</p>
               )}
               {gallery.wedding_date && (
                 <p className="text-muted-foreground text-sm">
@@ -157,13 +172,19 @@ const ManageGallery = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="couple">Wedding Couple</Label>
-                    <Input
-                      id="couple"
-                      value={editCouple}
-                      onChange={(e) => setEditCouple(e.target.value)}
-                      placeholder="Enter couple names"
-                    />
+                    <Label htmlFor="gallery-type">Gallery Type</Label>
+                    <Select value={editGalleryType} onValueChange={setEditGalleryType}>
+                      <SelectTrigger id="gallery-type">
+                        <SelectValue placeholder="Select gallery type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GALLERY_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="date">Wedding Date</Label>
