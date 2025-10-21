@@ -4,14 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Upload, Pencil } from "lucide-react";
 import { SectionManager } from "@/components/SectionManager";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Gallery {
   id: string;
   title: string;
   wedding_couple: string | null;
+  wedding_date: string | null;
   slug: string;
 }
 
@@ -21,6 +25,10 @@ const ManageGallery = () => {
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCouple, setEditCouple] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -47,11 +55,46 @@ const ManageGallery = () => {
       if (error) throw error;
 
       setGallery(data);
+      setEditTitle(data.title);
+      setEditCouple(data.wedding_couple || "");
+      setEditDate(data.wedding_date || "");
     } catch (error: any) {
       toast.error("Failed to load gallery");
       navigate("/dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateGallery = async () => {
+    if (!editTitle.trim()) {
+      toast.error("Gallery title is required");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("galleries")
+        .update({
+          title: editTitle,
+          wedding_couple: editCouple || null,
+          wedding_date: editDate || null,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setGallery(prev => prev ? {
+        ...prev,
+        title: editTitle,
+        wedding_couple: editCouple || null,
+        wedding_date: editDate || null,
+      } : null);
+
+      toast.success("Gallery updated successfully");
+      setEditDialogOpen(false);
+    } catch (error: any) {
+      toast.error("Failed to update gallery");
     }
   };
 
@@ -80,10 +123,64 @@ const ManageGallery = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-serif">{gallery.title}</h1>
-          {gallery.wedding_couple && (
-            <p className="text-muted-foreground mt-1">{gallery.wedding_couple}</p>
-          )}
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-serif">{gallery.title}</h1>
+              {gallery.wedding_couple && (
+                <p className="text-muted-foreground mt-1">{gallery.wedding_couple}</p>
+              )}
+              {gallery.wedding_date && (
+                <p className="text-muted-foreground text-sm">
+                  {new Date(gallery.wedding_date).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Details
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Gallery Details</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Gallery Title</Label>
+                    <Input
+                      id="title"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Enter gallery title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="couple">Wedding Couple</Label>
+                    <Input
+                      id="couple"
+                      value={editCouple}
+                      onChange={(e) => setEditCouple(e.target.value)}
+                      placeholder="Enter couple names"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Wedding Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleUpdateGallery} className="w-full">
+                    Save Changes
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </header>
 
