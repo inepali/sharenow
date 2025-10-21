@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Edit, Trash2, Calendar, Users } from "lucide-react";
+import { ExternalLink, Edit, Trash2, Calendar, Users, Image, HardDrive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 interface GalleryCardProps {
   gallery: {
@@ -20,6 +21,75 @@ interface GalleryCardProps {
 
 export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
   const navigate = useNavigate();
+  const [photoCount, setPhotoCount] = useState(0);
+  const [totalSize, setTotalSize] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchGalleryStats();
+  }, [gallery.id]);
+
+  const fetchGalleryStats = async () => {
+    try {
+      // Get all sections for this gallery
+      const { data: sections } = await supabase
+        .from("sections")
+        .select("id")
+        .eq("gallery_id", gallery.id);
+
+      if (!sections || sections.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const sectionIds = sections.map(s => s.id);
+
+      // Get all photos for these sections
+      const { data: photos } = await supabase
+        .from("photos")
+        .select("storage_path")
+        .in("section_id", sectionIds);
+
+      if (!photos) {
+        setLoading(false);
+        return;
+      }
+
+      setPhotoCount(photos.length);
+
+      // Calculate total size by fetching file metadata
+      let size = 0;
+      for (const photo of photos) {
+        try {
+          const { data: fileData } = await supabase.storage
+            .from("gallery-photos")
+            .list(photo.storage_path.split("/").slice(0, -1).join("/"), {
+              search: photo.storage_path.split("/").pop()
+            });
+
+          if (fileData && fileData.length > 0) {
+            size += fileData[0].metadata?.size || 0;
+          }
+        } catch (error) {
+          console.error("Error fetching file size:", error);
+        }
+      }
+
+      setTotalSize(size);
+    } catch (error) {
+      console.error("Error fetching gallery stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
 
   const getCoverImageUrl = () => {
     if (!gallery.cover_image_path) return null;
@@ -117,8 +187,18 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <span>Status: {gallery.is_active ? "Active" : "Inactive"}</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <Image className="w-3 h-3" />
+                {loading ? "..." : photoCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <HardDrive className="w-3 h-3" />
+                {loading ? "..." : formatBytes(totalSize)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
