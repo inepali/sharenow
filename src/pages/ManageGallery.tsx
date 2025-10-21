@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Upload, Pencil } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { SectionManager } from "@/components/SectionManager";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,6 +19,7 @@ interface Gallery {
   gallery_type: string | null;
   wedding_date: string | null;
   slug: string;
+  is_active: boolean;
 }
 
 const GALLERY_TYPES = [
@@ -44,6 +46,7 @@ const ManageGallery = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editGalleryType, setEditGalleryType] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -73,6 +76,7 @@ const ManageGallery = () => {
       setEditTitle(data.title);
       setEditGalleryType(data.gallery_type || "");
       setEditDate(data.wedding_date || "");
+      setEditIsActive(data.is_active);
     } catch (error: any) {
       toast.error("Failed to load gallery");
       navigate("/dashboard");
@@ -94,6 +98,7 @@ const ManageGallery = () => {
           title: editTitle,
           gallery_type: editGalleryType || null,
           wedding_date: editDate || null,
+          is_active: editIsActive,
         })
         .eq("id", id);
 
@@ -104,6 +109,7 @@ const ManageGallery = () => {
         title: editTitle,
         gallery_type: editGalleryType || null,
         wedding_date: editDate || null,
+        is_active: editIsActive,
       } : null);
 
       toast.success("Gallery updated successfully");
@@ -193,6 +199,19 @@ const ManageGallery = () => {
                       type="date"
                       value={editDate}
                       onChange={(e) => setEditDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="active-toggle">Gallery Status</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {editIsActive ? "Gallery is visible to clients" : "Gallery is hidden from clients"}
+                      </p>
+                    </div>
+                    <Switch
+                      id="active-toggle"
+                      checked={editIsActive}
+                      onCheckedChange={setEditIsActive}
                     />
                   </div>
                   <Button onClick={handleUpdateGallery} className="w-full">
