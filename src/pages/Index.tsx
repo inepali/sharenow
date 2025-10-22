@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Camera, Heart, Share2, Sparkles } from "lucide-react";
+import { Camera, Heart, Share2, Sparkles, Mail, Phone, Facebook, Instagram, Youtube } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -16,11 +16,11 @@ const Index = () => {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-serif mb-6 text-foreground">
-              Share Your Love Story
+              Share My Shoot
             </h1>
             
             <p className="text-xl md:text-2xl text-foreground/80 mb-8 leading-relaxed">
-              Create beautiful wedding galleries that let couples relive their special day.
+              Professional photo gallery platform for photographers. Create stunning galleries for weddings, events, and more.
               Upload, organize, and share precious memories with elegance.
             </p>
             
@@ -65,7 +65,7 @@ const Index = () => {
               Everything You Need
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Professional tools designed for wedding photographers and videographers
+              Professional tools designed for photographers of all specialties
             </p>
           </div>
 
@@ -96,7 +96,7 @@ const Index = () => {
               </div>
               <h3 className="text-2xl font-serif mb-3">Delight Your Clients</h3>
               <p className="text-muted-foreground">
-                Couples can favorite photos and download their cherished memories.
+                Clients can favorite photos and download their cherished memories.
               </p>
             </div>
           </div>
@@ -125,9 +125,70 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t bg-card">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2025 Wedding Gallery. Share memories with elegance.</p>
+      <footer className="py-12 border-t bg-card">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Brand */}
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                <Camera className="w-6 h-6 text-primary" />
+                <h3 className="text-xl font-serif">Share My Shoot</h3>
+              </div>
+              <p className="text-muted-foreground">
+                Professional photo gallery platform for photographers worldwide.
+              </p>
+            </div>
+
+            {/* Contact */}
+            <div className="text-center">
+              <h4 className="font-semibold mb-4">Contact Us</h4>
+              <div className="space-y-2 text-muted-foreground">
+                <a href="mailto:info@sharemyshoot.com" className="flex items-center justify-center gap-2 hover:text-primary transition-smooth">
+                  <Mail className="w-4 h-4" />
+                  info@sharemyshoot.com
+                </a>
+                <a href="tel:7047505858" className="flex items-center justify-center gap-2 hover:text-primary transition-smooth">
+                  <Phone className="w-4 h-4" />
+                  704-750-5858
+                </a>
+              </div>
+            </div>
+
+            {/* Social */}
+            <div className="text-center md:text-right">
+              <h4 className="font-semibold mb-4">Follow Us</h4>
+              <div className="flex items-center justify-center md:justify-end gap-4">
+                <a 
+                  href="https://facebook.com/sharemyshoot" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-smooth"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
+                <a 
+                  href="https://instagram.com/sharemyshoot" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-smooth"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+                <a 
+                  href="https://youtube.com/@sharemyshoot" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-smooth"
+                >
+                  <Youtube className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
+            <p>© 2025 Share My Shoot. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
