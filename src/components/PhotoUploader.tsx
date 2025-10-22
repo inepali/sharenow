@@ -188,13 +188,21 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
             <p className="text-muted-foreground">No photos yet. Upload some to get started!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {photos.map((photo) => {
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
+            {photos.map((photo, index) => {
               const isCover = currentCoverPath === photo.storage_path;
+              // Create varied aspect ratios for masonry effect
+              const getAspectClass = () => {
+                const pattern = index % 6;
+                if (pattern === 0 || pattern === 4) return "row-span-2"; // tall
+                if (pattern === 2) return "col-span-2"; // wide
+                return ""; // regular
+              };
+              
               return (
                 <div
                   key={photo.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-medium transition-smooth"
+                  className={`relative group aspect-square rounded overflow-hidden shadow-sm hover:shadow-md transition-smooth ${getAspectClass()}`}
                 >
                   {isCover && (
                     <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground">
