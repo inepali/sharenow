@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Upload, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Upload, Pencil, Images } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SectionManager } from "@/components/SectionManager";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -136,9 +136,20 @@ const ManageGallery = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Images className="w-5 h-5 text-primary" />
+            </div>
+            <h1 className="text-2xl font-serif">Share My Shoot</h1>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-serif">{gallery.title}</h1>
+              <h2 className="text-3xl font-serif">{gallery.title}</h2>
               {gallery.gallery_type && (
                 <p className="text-muted-foreground mt-1">{gallery.gallery_type}</p>
               )}
@@ -214,9 +225,7 @@ const ManageGallery = () => {
             </Dialog>
           </div>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 space-y-4">
             <Card className="p-6">
