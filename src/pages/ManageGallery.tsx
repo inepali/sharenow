@@ -218,24 +218,24 @@ const ManageGallery = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-4">
             <Card className="p-6">
               <h2 className="text-xl font-serif mb-4">Gallery Sections</h2>
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/dashboard")}
-                className="w-full mb-4 justify-start"
-                size="sm"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
               <SectionManager
                 galleryId={gallery.id}
                 selectedSection={selectedSection}
                 onSelectSection={setSelectedSection}
               />
             </Card>
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/dashboard")}
+              className="w-full justify-start"
+              size="sm"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
           </div>
 
           <div className="lg:col-span-2">
