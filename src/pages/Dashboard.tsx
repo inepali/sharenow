@@ -88,7 +88,7 @@ const Dashboard = () => {
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Images className="w-5 h-5 text-primary" />
             </div>
-            <h1 className="text-2xl font-serif">Wedding Gallery</h1>
+            <h1 className="text-2xl font-serif">Share My Shoot</h1>
           </div>
           <Button variant="outline" onClick={handleSignOut}>
             <LogOut className="w-4 h-4 mr-2" />
