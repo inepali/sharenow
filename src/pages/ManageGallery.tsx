@@ -136,14 +136,6 @@ const ManageGallery = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-            className="mb-3"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-serif">{gallery.title}</h1>
@@ -229,6 +221,15 @@ const ManageGallery = () => {
           <div className="lg:col-span-1">
             <Card className="p-6">
               <h2 className="text-xl font-serif mb-4">Gallery Sections</h2>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/dashboard")}
+                className="w-full mb-4 justify-start"
+                size="sm"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
               <SectionManager
                 galleryId={gallery.id}
                 selectedSection={selectedSection}
