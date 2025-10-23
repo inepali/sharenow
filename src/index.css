@@ -105,7 +105,7 @@ All colors MUST be HSL.
     width: 33.333%;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 500px) {
     .masonry-sizer,
     .masonry-item {
       width: 25%;
