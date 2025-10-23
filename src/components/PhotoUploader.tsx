@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, X, Download, Image } from "lucide-react";
+import Masonry from "masonry-layout";
 
 interface Photo {
   id: string;
@@ -23,11 +24,58 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const masonryRef = useRef<Masonry | null>(null);
 
   useEffect(() => {
     fetchPhotos();
     fetchGalleryCover();
   }, [sectionId]);
+
+  useEffect(() => {
+    if (photos.length > 0 && gridRef.current) {
+      // Destroy existing masonry instance if it exists
+      if (masonryRef.current) {
+        masonryRef.current.destroy();
+      }
+
+      // Initialize Masonry
+      masonryRef.current = new Masonry(gridRef.current, {
+        itemSelector: '.masonry-item',
+        columnWidth: '.masonry-sizer',
+        percentPosition: true,
+        gutter: 4
+      });
+
+      // Layout after images load
+      const images = gridRef.current.querySelectorAll('img');
+      let loadedCount = 0;
+      
+      images.forEach((img) => {
+        if (img instanceof HTMLImageElement) {
+          if (img.complete) {
+            loadedCount++;
+            if (loadedCount === images.length) {
+              masonryRef.current?.layout();
+            }
+          } else {
+            img.addEventListener('load', () => {
+              loadedCount++;
+              if (loadedCount === images.length) {
+                masonryRef.current?.layout();
+              }
+            });
+          }
+        }
+      });
+    }
+
+    return () => {
+      if (masonryRef.current) {
+        masonryRef.current.destroy();
+      }
+    };
+  }, [photos]);
 
   const fetchGalleryCover = async () => {
     const { data, error } = await supabase
@@ -188,21 +236,17 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
             <p className="text-muted-foreground">No photos yet. Upload some to get started!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
-            {photos.map((photo, index) => {
+          <div ref={gridRef} className="masonry-grid">
+            {/* Grid sizer for column width */}
+            <div className="masonry-sizer"></div>
+            
+            {photos.map((photo) => {
               const isCover = currentCoverPath === photo.storage_path;
-              // Create varied aspect ratios for masonry effect
-              const getAspectClass = () => {
-                const pattern = index % 6;
-                if (pattern === 0 || pattern === 4) return "row-span-2"; // tall
-                if (pattern === 2) return "col-span-2"; // wide
-                return ""; // regular
-              };
               
               return (
                 <div
                   key={photo.id}
-                  className={`relative group aspect-square rounded overflow-hidden shadow-sm hover:shadow-md transition-smooth ${getAspectClass()}`}
+                  className="masonry-item relative group rounded overflow-hidden shadow-sm hover:shadow-md transition-smooth"
                 >
                   {isCover && (
                     <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground">
@@ -212,7 +256,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                   <img
                     src={getPhotoUrl(photo.storage_path)}
                     alt={photo.caption || "Wedding photo"}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-cover"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center gap-2 p-2">
                     <div className="flex gap-2">
