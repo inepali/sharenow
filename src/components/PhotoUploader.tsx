@@ -188,21 +188,14 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
             <p className="text-muted-foreground">No photos yet. Upload some to get started!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
-            {photos.map((photo, index) => {
+          <div className="columns-2 md:columns-4 gap-2 space-y-2">
+            {photos.map((photo) => {
               const isCover = currentCoverPath === photo.storage_path;
-              // Create varied aspect ratios for masonry effect
-              const getAspectClass = () => {
-                const pattern = index % 6;
-                if (pattern === 0 || pattern === 4) return "row-span-2"; // tall
-                if (pattern === 2) return "col-span-2"; // wide
-                return ""; // regular
-              };
               
               return (
                 <div
                   key={photo.id}
-                  className={`relative group aspect-square rounded overflow-hidden shadow-sm hover:shadow-md transition-smooth ${getAspectClass()}`}
+                  className="relative group break-inside-avoid mb-2 rounded overflow-hidden shadow-sm hover:shadow-md transition-smooth"
                 >
                   {isCover && (
                     <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground">
@@ -212,7 +205,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                   <img
                     src={getPhotoUrl(photo.storage_path)}
                     alt={photo.caption || "Wedding photo"}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-cover"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center gap-2 p-2">
                     <div className="flex gap-2">
