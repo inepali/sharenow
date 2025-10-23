@@ -94,25 +94,4 @@ All colors MUST be HSL.
   .transition-smooth {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-  /* Masonry Grid Styles */
-  .masonry-grid {
-    width: 100%;
-  }
-
-  .masonry-sizer,
-  .masonry-item {
-    width: 33.333%;
-  }
-
-  @media (min-width: 768px) {
-    .masonry-sizer,
-    .masonry-item {
-      width: 25%;
-    }
-  }
-
-  .masonry-item {
-    margin-bottom: 4px;
-  }
 }
