@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Camera } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -91,8 +91,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
       <Card className="w-full max-w-md p-8 shadow-medium">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <Camera className="w-8 h-8 text-primary" />
+          <div className="mb-4">
+            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto" />
           </div>
           <h1 className="text-3xl font-serif text-foreground mb-2">
             Wedding Gallery

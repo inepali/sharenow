@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Download, Camera } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import logo from "@/assets/logo.png";
 
 interface Gallery {
   id: string;
@@ -229,8 +230,8 @@ const ClientGallery = () => {
     <div className="min-h-screen bg-background">
       <header className="gradient-hero border-b">
         <div className="container mx-auto px-4 py-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/80 mb-6 shadow-soft">
-            <Camera className="w-8 h-8 text-primary" />
+          <div className="mb-6">
+            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto" />
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-3">{gallery.title}</h1>
           {gallery.gallery_type && (

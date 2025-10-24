@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Camera, Heart, Share2, Sparkles, Mail, Phone, Facebook, Instagram, Youtube } from "lucide-react";
+import { Heart, Share2, Sparkles, Mail, Phone, Facebook, Instagram, Youtube } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -11,8 +12,8 @@ const Index = () => {
       <section className="relative overflow-hidden gradient-hero">
         <div className="container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/80 mb-8 shadow-medium">
-              <Camera className="w-10 h-10 text-primary" />
+            <div className="mb-8">
+              <img src={logo} alt="Share My Shoot Logo" className="w-32 h-32 mx-auto" />
             </div>
             
             <h1 className="text-5xl md:text-7xl font-serif mb-6 text-foreground">
@@ -131,7 +132,7 @@ const Index = () => {
             {/* Brand */}
             <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                <Camera className="w-6 h-6 text-primary" />
+                <img src={logo} alt="Share My Shoot Logo" className="w-8 h-8" />
                 <h3 className="text-xl font-serif">Share My Shoot</h3>
               </div>
               <p className="text-muted-foreground">
