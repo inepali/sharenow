@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import ManageGallery from "./pages/ManageGallery";
 import ClientGallery from "./pages/ClientGallery";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/manage/:id" element={<ManageGallery />} />

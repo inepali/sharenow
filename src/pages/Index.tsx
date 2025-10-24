@@ -28,7 +28,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/pricing")}
                 className="text-lg px-8 shadow-medium hover:shadow-hover transition-smooth"
               >
                 Get Started
@@ -116,10 +116,10 @@ const Index = () => {
             </p>
             <Button
               size="lg"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/pricing")}
               className="text-lg px-8 shadow-medium hover:shadow-hover transition-smooth"
             >
-              Start for Free
+              View Pricing
             </Button>
           </div>
         </div>
