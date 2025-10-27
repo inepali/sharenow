@@ -8,51 +8,55 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Soft wedding-inspired palette */
-    --background: 32 25% 98%;
-    --foreground: 25 15% 25%;
+    /* 2025 Color Palette: Warm & Natural */
+    --background: 24 38% 93%; /* Soft Champagne */
+    --foreground: 24 31% 29%; /* Warm Chocolate */
 
     --card: 0 0% 100%;
-    --card-foreground: 25 15% 25%;
+    --card-foreground: 24 31% 29%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 15% 25%;
+    --popover-foreground: 24 31% 29%;
 
-    /* Romantic rose as primary */
-    --primary: 345 65% 70%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 345 55% 85%;
-    --primary-hover: 345 70% 65%;
+    /* Warm Chocolate/Mocha as primary */
+    --primary: 24 31% 29%;
+    --primary-foreground: 24 38% 93%;
+    --primary-light: 24 31% 45%;
+    --primary-hover: 24 31% 22%;
 
-    /* Warm cream as secondary */
-    --secondary: 35 30% 92%;
-    --secondary-foreground: 25 15% 25%;
+    /* Warm Taupe as secondary */
+    --secondary: 30 15% 66%;
+    --secondary-foreground: 24 31% 29%;
 
-    --muted: 35 20% 95%;
-    --muted-foreground: 25 10% 50%;
+    --muted: 210 7% 46%; /* Slate Gray */
+    --muted-foreground: 210 7% 30%;
 
-    /* Soft gold accent */
-    --accent: 43 60% 75%;
-    --accent-foreground: 25 25% 20%;
-    --accent-hover: 43 70% 70%;
+    /* Dusty Sage Green as accent */
+    --accent: 90 9% 57%;
+    --accent-foreground: 24 31% 29%;
+    --accent-hover: 90 9% 50%;
+
+    /* Muted Blush Pink as highlight */
+    --blush: 13 32% 77%;
+    --blush-foreground: 24 31% 29%;
 
     --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 15% 88%;
-    --input: 35 15% 88%;
-    --ring: 345 65% 70%;
+    --border: 30 15% 82%;
+    --input: 30 15% 82%;
+    --ring: 24 31% 29%;
 
     --radius: 0.75rem;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(345 65% 70% / 0.1), hsl(35 30% 92% / 0.3));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(35 20% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(90 9% 57% / 0.15), hsl(24 38% 93% / 0.5));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(24 38% 95%));
     
     /* Shadows */
-    --shadow-soft: 0 4px 24px hsl(345 30% 50% / 0.08);
-    --shadow-medium: 0 8px 32px hsl(345 30% 50% / 0.12);
-    --shadow-hover: 0 12px 40px hsl(345 30% 50% / 0.15);
+    --shadow-soft: 0 4px 24px hsl(24 31% 29% / 0.08);
+    --shadow-medium: 0 8px 32px hsl(24 31% 29% / 0.12);
+    --shadow-hover: 0 12px 40px hsl(24 31% 29% / 0.15);
   }
 }
 
