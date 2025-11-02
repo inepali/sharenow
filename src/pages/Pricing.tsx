@@ -1,18 +1,27 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   const tiers = [
     {
       name: "Starter",
       tagline: "Perfect for solo photographers",
       price: { monthly: 19, yearly: 199 },
+      stripePriceId: {
+        monthly: "price_starter_monthly", // Replace with actual Stripe price IDs
+        yearly: "price_starter_yearly"
+      },
       storage: "500 GB",
       features: [
         "Up to 50 galleries per year",
@@ -28,6 +37,10 @@ const Pricing = () => {
       name: "Professional",
       tagline: "For established professionals",
       price: { monthly: 49, yearly: 499 },
+      stripePriceId: {
+        monthly: "price_professional_monthly",
+        yearly: "price_professional_yearly"
+      },
       storage: "2 TB",
       features: [
         "Up to 250 galleries per year",
@@ -43,6 +56,10 @@ const Pricing = () => {
       name: "Studio",
       tagline: "For teams & high-volume projects",
       price: { monthly: 129, yearly: 1299 },
+      stripePriceId: {
+        monthly: "price_studio_monthly",
+        yearly: "price_studio_yearly"
+      },
       storage: "10 TB (scalable)",
       features: [
         "Unlimited galleries",
@@ -63,6 +80,35 @@ const Pricing = () => {
     { name: "Print Shop Integration", price: "$49/month" },
     { name: "Premium Onboarding/Training", price: "$299 one-time" }
   ];
+
+  const handleSubscribe = async (tier: typeof tiers[0]) => {
+    setLoadingTier(tier.name);
+    
+    try {
+      const priceId = tier.stripePriceId[billingCycle];
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          priceId,
+          billingCycle,
+          tierName: tier.name
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Failed to start checkout. Please try again.');
+    } finally {
+      setLoadingTier(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,10 +141,34 @@ const Pricing = () => {
           <h1 className="text-4xl md:text-6xl font-serif mb-4">
             Choose Your Perfect Plan
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Start sharing beautiful wedding galleries with your clients today.
             Scale as you grow with flexible pricing that works for everyone.
           </p>
+          
+          {/* Billing Toggle */}
+          <div className="inline-flex items-center gap-4 bg-card p-2 rounded-lg">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-6 py-2 rounded-md transition-smooth ${
+                billingCycle === "monthly"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle("yearly")}
+              className={`px-6 py-2 rounded-md transition-smooth ${
+                billingCycle === "yearly"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Yearly <Badge variant="secondary" className="ml-2">Save up to 20%</Badge>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -127,21 +197,27 @@ const Pricing = () => {
                     {tier.tagline}
                   </p>
                   <div className="mb-2">
-                    <span className="text-4xl font-bold">${tier.price.monthly}</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-4xl font-bold">
+                      ${billingCycle === "monthly" ? tier.price.monthly : tier.price.yearly}
+                    </span>
+                    <span className="text-muted-foreground">
+                      /{billingCycle === "monthly" ? "month" : "year"}
+                    </span>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    or ${tier.price.yearly}/year (save $
-                    {tier.price.monthly * 12 - tier.price.yearly})
-                  </div>
+                  {billingCycle === "yearly" && (
+                    <div className="text-sm text-primary font-medium">
+                      Save ${tier.price.monthly * 12 - tier.price.yearly}/year
+                    </div>
+                  )}
                 </div>
 
                 <Button
                   className="w-full mb-6"
                   variant={tier.popular ? "default" : "outline"}
-                  onClick={() => navigate("/auth")}
+                  onClick={() => handleSubscribe(tier)}
+                  disabled={loadingTier === tier.name}
                 >
-                  Get Started
+                  {loadingTier === tier.name ? "Processing..." : "Get Started"}
                 </Button>
 
                 <div className="space-y-3">
