@@ -149,11 +149,18 @@ const Auth = () => {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-smooth block w-full"
+          >
+            Cancel
+          </button>
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-primary hover:text-primary-hover transition-smooth"
+            className="text-sm text-primary hover:text-primary-hover transition-smooth block w-full"
           >
             {isSignUp
               ? "Already have an account? Sign in"
