@@ -24,12 +24,12 @@ const Pricing = () => {
       },
       storage: "500 GB",
       features: [
-        "Up to 50 galleries per year",
-        "Basic branding (logo + color)",
-        "Client download links",
-        "Basic analytics",
-        "Email/chat support",
-        "500 GB storage"
+        { text: "Up to 50 galleries per year", comingSoon: false },
+        { text: "Basic branding (logo + color)", comingSoon: false },
+        { text: "Client download links", comingSoon: false },
+        { text: "Basic analytics", comingSoon: false },
+        { text: "Email/chat support", comingSoon: false },
+        { text: "500 GB storage", comingSoon: false }
       ],
       popular: false
     },
@@ -43,12 +43,12 @@ const Pricing = () => {
       },
       storage: "1 TB",
       features: [
-        "Up to 250 galleries per year",
-        "Advanced branding + custom domain",
-        "Expiry/watermark options",
-        "Enhanced analytics",
-        "Priority support",
-        "1 TB storage"
+        { text: "Up to 250 galleries per year", comingSoon: false },
+        { text: "Advanced branding + custom domain", comingSoon: true },
+        { text: "Expiry/watermark options", comingSoon: true },
+        { text: "Enhanced analytics", comingSoon: true },
+        { text: "Priority support", comingSoon: false },
+        { text: "1 TB storage", comingSoon: false }
       ],
       popular: true
     },
@@ -62,12 +62,12 @@ const Pricing = () => {
       },
       storage: "2 TB",
       features: [
-        "Unlimited galleries",
-        "White-label customization",
-        "Team accounts & roles",
-        "API/CRM integration",
-        "Dedicated account manager",
-        "2 TB storage"
+        { text: "Unlimited galleries", comingSoon: false },
+        { text: "White-label customization", comingSoon: false },
+        { text: "Team accounts & roles", comingSoon: true },
+        { text: "API/CRM integration", comingSoon: true },
+        { text: "Dedicated account manager", comingSoon: false },
+        { text: "2 TB storage", comingSoon: false }
       ],
       popular: false
     }
@@ -224,7 +224,14 @@ const Pricing = () => {
                   {tier.features.map((feature, index) => (
                     <div key={index} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-sm">{feature.text}</span>
+                        {feature.comingSoon && (
+                          <Badge variant="secondary" className="text-xs">
+                            Coming soon
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
