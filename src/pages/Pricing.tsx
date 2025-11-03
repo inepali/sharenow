@@ -206,7 +206,7 @@ const Pricing = () => {
                   </div>
                   {billingCycle === "yearly" && (
                     <div className="text-sm text-primary font-medium">
-                      Save ${tier.price.monthly * 12 - tier.price.yearly}/year
+                      Save ${(tier.price.monthly * 12 - tier.price.yearly).toFixed(2)}/year
                     </div>
                   )}
                 </div>
