@@ -19,8 +19,8 @@ const Pricing = () => {
       tagline: "Perfect for solo photographers",
       price: { monthly: 19, yearly: 199 },
       stripePriceId: {
-        monthly: "price_starter_monthly", // Replace with actual Stripe price IDs
-        yearly: "price_starter_yearly"
+        monthly: "price_1SP5N8HE0DcMZ0rQ1EwSnB1X",
+        yearly: "price_1SP5NYHE0DcMZ0rQD10e7sjt"
       },
       storage: "500 GB",
       features: [
@@ -38,8 +38,8 @@ const Pricing = () => {
       tagline: "For established professionals",
       price: { monthly: 49, yearly: 499 },
       stripePriceId: {
-        monthly: "price_professional_monthly",
-        yearly: "price_professional_yearly"
+        monthly: "price_1SPChPHE0DcMZ0rQJXqHcGOx",
+        yearly: "price_1SPChUHE0DcMZ0rQUj2TVRoU"
       },
       storage: "2 TB",
       features: [
@@ -57,8 +57,8 @@ const Pricing = () => {
       tagline: "For teams & high-volume projects",
       price: { monthly: 129, yearly: 1299 },
       stripePriceId: {
-        monthly: "price_studio_monthly",
-        yearly: "price_studio_yearly"
+        monthly: "price_1SPChYHE0DcMZ0rQX9dDP1EH",
+        yearly: "price_1SPChZHE0DcMZ0rQVcXAMwCW"
       },
       storage: "10 TB (scalable)",
       features: [
