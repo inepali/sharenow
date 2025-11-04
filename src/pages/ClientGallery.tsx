@@ -284,11 +284,11 @@ const ClientGallery = () => {
                     <p className="text-muted-foreground">No photos in this section yet</p>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                     {section.photos.map((photo) => (
                       <div
                         key={photo.id}
-                        className="relative group aspect-square rounded-lg overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
+                        className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
                       >
                         <img
                           src={getPhotoUrl(photo.storage_path)}
