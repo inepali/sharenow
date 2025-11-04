@@ -4,10 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, LogOut, Images } from "lucide-react";
+import { Plus, LogOut, Images, User, Settings, CreditCard, Palette } from "lucide-react";
 import { GalleryCard } from "@/components/GalleryCard";
 import { CreateGalleryDialog } from "@/components/CreateGalleryDialog";
 import logo from "@/assets/logo.png";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Gallery {
   id: string;
@@ -25,6 +34,7 @@ const Dashboard = () => {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   useEffect(() => {
     checkAuth();
@@ -43,6 +53,8 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return;
+
+      setUserEmail(user.email || "");
 
       const { data, error } = await supabase
         .from("galleries")
@@ -89,10 +101,44 @@ const Dashboard = () => {
             <img src={logo} alt="Share My Shoot Logo" className="w-10 h-10 object-contain" />
             <h1 className="text-2xl font-serif">Share My Shoot</h1>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-primary/10">
+                    <User className="h-5 w-5 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">My Account</p>
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Account Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Payment</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Brand</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
