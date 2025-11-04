@@ -231,7 +231,7 @@ const ClientGallery = () => {
       <header className="gradient-hero border-b">
         <div className="container mx-auto px-4 py-12 text-center">
           <div className="mb-6">
-            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto" />
+            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto mix-blend-darken dark:mix-blend-lighten" />
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-3">{gallery.title}</h1>
           {gallery.gallery_type && (
