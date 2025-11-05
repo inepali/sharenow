@@ -267,9 +267,13 @@ const ClientGallery = () => {
           </Card>
         ) : (
           <Tabs defaultValue={sections[0]?.id} className="w-full">
-            <TabsList className="w-full justify-start mb-8 flex-wrap h-auto">
+            <TabsList className="w-full justify-start mb-8 flex-wrap h-auto bg-background">
               {sections.map((section) => (
-                <TabsTrigger key={section.id} value={section.id} className="px-6">
+                <TabsTrigger 
+                  key={section.id} 
+                  value={section.id} 
+                  className="px-6 data-[state=active]:bg-muted data-[state=active]:text-muted-foreground data-[state=inactive]:bg-background data-[state=inactive]:text-foreground"
+                >
                   {section.title}
                 </TabsTrigger>
               ))}
