@@ -21,7 +21,7 @@ const Pricing = () => {
     {
       name: "Starter",
       tagline: "Perfect for solo photographers",
-      price: { monthly: 4.99, yearly: 49.90 },
+      price: { monthly: 19.00, yearly: 199.00 },
       stripePriceId: {
         monthly: "price_1SP5N8HE0DcMZ0rQ1EwSnB1X",
         yearly: "price_1SP5NYHE0DcMZ0rQD10e7sjt"
@@ -40,7 +40,7 @@ const Pricing = () => {
     {
       name: "Professional",
       tagline: "For established professionals",
-      price: { monthly: 9.99, yearly: 99.90 },
+      price: { monthly: 49.00, yearly: 499.00 },
       stripePriceId: {
         monthly: "price_1SPChPHE0DcMZ0rQJXqHcGOx",
         yearly: "price_1SPChUHE0DcMZ0rQUj2TVRoU"
@@ -59,7 +59,7 @@ const Pricing = () => {
     {
       name: "Studio",
       tagline: "For teams & high-volume projects",
-      price: { monthly: 19.99, yearly: 199.90 },
+      price: { monthly: 129.00, yearly: 1299.00 },
       stripePriceId: {
         monthly: "price_1SPChYHE0DcMZ0rQX9dDP1EH",
         yearly: "price_1SPChZHE0DcMZ0rQVcXAMwCW"
