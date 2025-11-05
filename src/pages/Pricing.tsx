@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,10 @@ const Pricing = () => {
   const navigate = useNavigate();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const tiers = [
     {
