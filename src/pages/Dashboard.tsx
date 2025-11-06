@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, LogOut, Images, User, Settings, CreditCard, Palette } from "lucide-react";
+import { Plus, LogOut, Images, User, Settings, CreditCard, Palette, Store } from "lucide-react";
 import { GalleryCard } from "@/components/GalleryCard";
 import { CreateGalleryDialog } from "@/components/CreateGalleryDialog";
 import logo from "@/assets/logo.png";
@@ -127,6 +127,10 @@ const Dashboard = () => {
               <DropdownMenuItem onClick={() => navigate('/subscription')}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 <span>Subscription</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/store')}>
+                <Store className="mr-2 h-4 w-4" />
+                <span>Store</span>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Palette className="mr-2 h-4 w-4" />

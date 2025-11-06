@@ -11,6 +11,7 @@ import ClientGallery from "./pages/ClientGallery";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import Subscription from "./pages/Subscription";
+import Store from "./pages/Store";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/store" element={<Store />} />
           <Route path="/manage/:id" element={<ManageGallery />} />
           <Route path="/gallery/:slug" element={<ClientGallery />} />
           <Route path="*" element={<NotFound />} />
