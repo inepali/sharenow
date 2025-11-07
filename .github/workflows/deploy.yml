@@ -76,11 +76,11 @@ jobs:
             rsync -az -e "ssh -p $PORT" "$RSYNC_SRC" "$SSH_USER@$SSH_HOST:$ROOT_PATH/"
           else
             SUBS="${SUBS_TEST}"
+            echo "Deploying to: $SUBS"
+
+            echo "Deploying to $SUBS…"
+            rsync -az -e "ssh -p $PORT" "$RSYNC_SRC" "$SSH_USER@$SSH_HOST:$ROOT_PATH/$SUBS"
+
           fi
-
-          echo "Deploying to: $SUBS"
-
-          echo "Ensuring remote directories exist…"
-          ssh -p "$PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$ROOT_PATH' $(for s in $SUBS; do printf '%q ' "$ROOT_PATH/$s"; done)"
 
           echo "✅ Deployment complete."
