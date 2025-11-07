@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      subs:
+        description: "Enter subdomains (e.g. 'prod', 'test')"
+        required: false
+        default: "test"
+
+env:
+  NODE_VERSION: "20"
+  #SUBS_ALL: "clt rdu gsp ilm gso ewn avl fay chs"   # full list of all subdomains
+  SUBS_TEST: "test"             # default test deployment only
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Detect output dir (CRA vs Vite)
+        id: out
+        run: |
+          if [ -d "dist" ]; then
+            echo "dir=dist" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=build" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_PORT }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          PORT="${SSH_PORT:-65002}"
+          ssh-keyscan -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to selected subdomains (no delete)
+        env:
+          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_PORT }}
+          ROOT_PATH: ${{ secrets.HOSTINGER_PATH }}   # e.g. /home/u123/public_html
+          RSYNC_SRC: ${{ steps.out.outputs.dir }}/
+          SUBS_INPUT: ${{ inputs.subs }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-65002}"
+
+          # Decide which subfolders to deploy
+          if [ "${SUBS_INPUT,,}" = "prod" ]; then
+            #SUBS="${SUBS_ALL}"
+            
+            echo "Deploying to main site ($ROOT_PATH)…"
+            rsync -az -e "ssh -p $PORT" "$RSYNC_SRC" "$SSH_USER@$SSH_HOST:$ROOT_PATH/"
+          else
+            SUBS="${SUBS_TEST}"
+          fi
+
+          echo "Deploying to: $SUBS"
+
+          echo "Ensuring remote directories exist…"
+          ssh -p "$PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$ROOT_PATH' $(for s in $SUBS; do printf '%q ' "$ROOT_PATH/$s"; done)"
+
+          echo "✅ Deployment complete."
