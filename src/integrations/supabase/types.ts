@@ -133,6 +133,125 @@ export type Database = {
           },
         ]
       }
+      print_orders: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          gallery_id: string | null
+          id: string
+          items: Json
+          order_number: string
+          partner_name: string
+          partner_order_id: string | null
+          revenue_breakdown: Json | null
+          shipping_address: Json
+          shipping_cost: number
+          status: string | null
+          subtotal: number
+          tax: number | null
+          total_amount: number
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          gallery_id?: string | null
+          id?: string
+          items: Json
+          order_number: string
+          partner_name?: string
+          partner_order_id?: string | null
+          revenue_breakdown?: Json | null
+          shipping_address: Json
+          shipping_cost: number
+          status?: string | null
+          subtotal: number
+          tax?: number | null
+          total_amount: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          gallery_id?: string | null
+          id?: string
+          items?: Json
+          order_number?: string
+          partner_name?: string
+          partner_order_id?: string | null
+          revenue_breakdown?: Json | null
+          shipping_address?: Json
+          shipping_cost?: number
+          status?: string | null
+          subtotal?: number
+          tax?: number | null
+          total_amount?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_orders_gallery_id_fkey"
+            columns: ["gallery_id"]
+            isOneToOne: false
+            referencedRelation: "galleries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_partner_products: {
+        Row: {
+          base_price: number
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          partner_name: string
+          partner_product_uid: string
+          partner_sku: string | null
+          product_metadata: Json | null
+          product_name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          partner_name?: string
+          partner_product_uid: string
+          partner_sku?: string | null
+          product_metadata?: Json | null
+          product_name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          partner_name?: string
+          partner_product_uid?: string
+          partner_sku?: string | null
+          product_metadata?: Json | null
+          product_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       print_products: {
         Row: {
           category: string
@@ -172,35 +291,57 @@ export type Database = {
           dimensions: string | null
           id: string
           is_active: boolean
+          partner_product_id: string | null
+          partner_product_uid: string | null
+          photographer_margin_percent: number | null
+          platform_margin_percent: number | null
           price: number
           product_id: string
           size_name: string
           stripe_price_id: string | null
           updated_at: string
+          wholesale_cost: number | null
         }
         Insert: {
           created_at?: string
           dimensions?: string | null
           id?: string
           is_active?: boolean
+          partner_product_id?: string | null
+          partner_product_uid?: string | null
+          photographer_margin_percent?: number | null
+          platform_margin_percent?: number | null
           price: number
           product_id: string
           size_name: string
           stripe_price_id?: string | null
           updated_at?: string
+          wholesale_cost?: number | null
         }
         Update: {
           created_at?: string
           dimensions?: string | null
           id?: string
           is_active?: boolean
+          partner_product_id?: string | null
+          partner_product_uid?: string | null
+          photographer_margin_percent?: number | null
+          platform_margin_percent?: number | null
           price?: number
           product_id?: string
           size_name?: string
           stripe_price_id?: string | null
           updated_at?: string
+          wholesale_cost?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_variants_partner_product_id_fkey"
+            columns: ["partner_product_id"]
+            isOneToOne: false
+            referencedRelation: "print_partner_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]

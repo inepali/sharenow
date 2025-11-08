@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Package } from "lucide-react";
+import { ArrowLeft, Plus, Package, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDialog } from "@/components/ProductDialog";
 import { VariantDialog } from "@/components/VariantDialog";
@@ -18,6 +19,8 @@ const Store = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [activeProductId, setActiveProductId] = useState<string>("");
+  const [syncingProducts, setSyncingProducts] = useState(false);
+  const [partnerProducts, setPartnerProducts] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -65,10 +68,36 @@ const Store = () => {
         });
         setVariants(variantsByProduct);
       }
+
+      // Fetch partner products
+      const { data: partnerData, error: partnerError } = await supabase
+        .from("print_partner_products")
+        .select("*")
+        .eq("is_active", true);
+
+      if (partnerError) throw partnerError;
+      setPartnerProducts(partnerData || []);
     } catch (error: any) {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncWHCCProducts = async () => {
+    setSyncingProducts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-whcc-products');
+      
+      if (error) throw error;
+      
+      toast.success(`Synced ${data.count} WHCC products`);
+      fetchProducts(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error syncing WHCC products:", error);
+      toast.error("Failed to sync WHCC products");
+    } finally {
+      setSyncingProducts(false);
     }
   };
 
@@ -130,15 +159,45 @@ const Store = () => {
                 Manage your print products, sizes, and pricing
               </p>
             </div>
-            <Button onClick={() => setShowProductDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Product
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={syncWHCCProducts}
+                disabled={syncingProducts}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncingProducts ? 'animate-spin' : ''}`} />
+                Sync WHCC Products
+              </Button>
+              <Button onClick={() => setShowProductDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Product
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {partnerProducts.length > 0 && (
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-serif mb-4">WHCC Partner Products ({partnerProducts.length})</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {partnerProducts.slice(0, 6).map((product) => (
+                <div key={product.id} className="border rounded-lg p-3">
+                  <p className="font-medium">{product.product_name}</p>
+                  <p className="text-sm text-muted-foreground">{product.category}</p>
+                  <p className="text-sm">Wholesale: ${product.base_price.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+            {partnerProducts.length > 6 && (
+              <p className="text-sm text-muted-foreground mt-4">
+                +{partnerProducts.length - 6} more products available
+              </p>
+            )}
+          </Card>
+        )}
+
         {products.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="max-w-md mx-auto">

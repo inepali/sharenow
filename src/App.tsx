@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import Subscription from "./pages/Subscription";
 import Store from "./pages/Store";
+import PrintOrders from "./pages/PrintOrders";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/store" element={<Store />} />
+          <Route path="/print-orders" element={<PrintOrders />} />
           <Route path="/manage/:id" element={<ManageGallery />} />
           <Route path="/gallery/:slug" element={<ClientGallery />} />
           <Route path="*" element={<NotFound />} />
