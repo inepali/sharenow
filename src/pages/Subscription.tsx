@@ -14,6 +14,7 @@ interface SubscriptionData {
   price_id?: string;
   subscription_id?: string;
   subscription_end?: string;
+  subscription_start?: string;
 }
 
 const TIER_INFO = {
@@ -37,16 +38,16 @@ const Subscription = () => {
     try {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/auth');
         return;
       }
 
       const { data, error } = await supabase.functions.invoke('check-subscription');
-      
+
       if (error) throw error;
-      
+
       setSubscription(data);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -64,9 +65,9 @@ const Subscription = () => {
     try {
       setManagingPortal(true);
       const { data, error } = await supabase.functions.invoke('customer-portal');
-      
+
       if (error) throw error;
-      
+
       if (data?.url) {
         window.open(data.url, '_blank');
       }
@@ -104,9 +105,9 @@ const Subscription = () => {
                 Back to Dashboard
               </Button>
             </div>
-            <img 
-              src={logo} 
-              alt="Share My Shoot Logo" 
+            <img
+              src={logo}
+              alt="Share My Shoot Logo"
               className="w-8 h-8 mix-blend-darken dark:mix-blend-lighten"
             />
           </div>
@@ -150,6 +151,15 @@ const Subscription = () => {
                               Active
                             </Badge>
                           </div>
+                          {subscription.subscription_start && (
+                            <p className="text-sm text-muted-foreground">
+                              Started on {new Date(subscription.subscription_start).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          )}
                           {subscription.subscription_end && (
                             <p className="text-sm text-muted-foreground">
                               Renews on {new Date(subscription.subscription_end).toLocaleDateString('en-US', {

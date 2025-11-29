@@ -66,6 +66,7 @@ serve(async (req) => {
     let subscriptionEnd = null;
     let priceId = null;
     let subscriptionId = null;
+    let subscriptionStart = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -73,9 +74,12 @@ serve(async (req) => {
       subscriptionId = subscription.id;
       priceId = subscription.items.data[0].price.id;
       productId = subscription.items.data[0].price.product as string;
+      subscriptionStart = new Date(subscription.start_date * 1000).toISOString();
+
       logStep("Active subscription found", {
         subscriptionId,
         endDate: subscriptionEnd,
+        startDate: subscriptionStart,
         productId,
         priceId
       });
@@ -88,7 +92,8 @@ serve(async (req) => {
       product_id: productId,
       price_id: priceId,
       subscription_id: subscriptionId,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      subscription_start: subscriptionStart
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

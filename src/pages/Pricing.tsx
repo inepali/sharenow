@@ -87,10 +87,10 @@ const Pricing = () => {
 
   const handleSubscribe = async (tier: typeof tiers[0]) => {
     setLoadingTier(tier.name);
-    
+
     try {
       const priceId = tier.stripePriceId[billingCycle];
-      
+
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId,
@@ -149,26 +149,24 @@ const Pricing = () => {
             Start sharing beautiful wedding galleries with your clients today.
             Scale as you grow with flexible pricing that works for everyone.
           </p>
-          
+
           {/* Billing Toggle */}
           <div className="inline-flex items-center gap-4 bg-card p-2 rounded-lg">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-6 py-2 rounded-md transition-smooth ${
-                billingCycle === "monthly"
+              className={`px-6 py-2 rounded-md transition-smooth ${billingCycle === "monthly"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBillingCycle("yearly")}
-              className={`px-6 py-2 rounded-md transition-smooth ${
-                billingCycle === "yearly"
+              className={`px-6 py-2 rounded-md transition-smooth ${billingCycle === "yearly"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               Yearly <Badge variant="secondary" className="ml-2">Save up to 20%</Badge>
             </button>
@@ -183,11 +181,10 @@ const Pricing = () => {
             {tiers.map((tier) => (
               <Card
                 key={tier.name}
-                className={`relative p-8 transition-all hover:shadow-lg ${
-                  tier.popular
+                className={`relative p-8 transition-all hover:shadow-lg ${tier.popular
                     ? "border-primary shadow-elegant scale-105 md:scale-110"
                     : ""
-                }`}
+                  }`}
               >
                 {tier.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -221,7 +218,7 @@ const Pricing = () => {
                   onClick={() => handleSubscribe(tier)}
                   disabled={loadingTier === tier.name}
                 >
-                  {loadingTier === tier.name ? "Processing..." : "Get Started"}
+                  {loadingTier === tier.name ? "Processing..." : "Start 30 Days Free"}
                 </Button>
 
                 <div className="space-y-3">

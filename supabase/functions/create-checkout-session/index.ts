@@ -33,6 +33,9 @@ serve(async (req) => {
       mode: 'subscription',
       success_url: `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/pricing`,
+      subscription_data: {
+        trial_period_days: 30,
+      },
       metadata: {
         tier: tierName,
         billing_cycle: billingCycle,
@@ -43,7 +46,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ url: session.url }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
@@ -53,7 +56,7 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       }
