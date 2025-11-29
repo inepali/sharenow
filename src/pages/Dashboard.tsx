@@ -51,7 +51,7 @@ const Dashboard = () => {
   const fetchGalleries = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) return;
 
       setUserEmail(user.email || "");
@@ -65,8 +65,9 @@ const Dashboard = () => {
       if (error) throw error;
 
       setGalleries(data || []);
-    } catch (error: any) {
-      toast.error("Failed to load galleries");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to load galleries";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -101,7 +102,7 @@ const Dashboard = () => {
             <img src={logo} alt="Share My Shoot Logo" className="w-10 h-10 object-contain" />
             <h1 className="text-2xl font-serif">Share My Shoot</h1>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">

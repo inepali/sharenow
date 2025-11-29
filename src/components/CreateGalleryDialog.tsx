@@ -129,8 +129,9 @@ export const CreateGalleryDialog = ({
       setCoverImage(null);
       
       onGalleryCreated();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create gallery");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create gallery";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

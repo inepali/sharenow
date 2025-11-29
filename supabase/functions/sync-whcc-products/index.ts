@@ -22,7 +22,7 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    
+
     if (!user) {
       throw new Error('Unauthorized');
     }
@@ -108,20 +108,21 @@ serve(async (req) => {
     console.log(`Successfully synced ${insertedProducts?.length || 0} WHCC products`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         count: insertedProducts?.length || 0,
-        products: insertedProducts 
+        products: insertedProducts
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in sync-whcc-products:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ error: errorMessage }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

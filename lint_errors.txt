@@ -1,0 +1,118 @@
+﻿
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\working\sharenow\src\components\GalleryCard.tsx
+  30:6  warning  React Hook useEffect has a missing dependency: 'fetchGalleryStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\working\sharenow\src\components\PhotoUploader.tsx
+  30:6   warning  React Hook useEffect has missing dependencies: 'fetchGalleryCover' and 'fetchPhotos'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  93:21  error    Unexpected any. Specify a different type                                                                                                  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\components\PrintShopCart.tsx
+   30:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\components\ProductCard.tsx
+  20:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\components\ProductDialog.tsx
+  15:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\components\SectionManager.tsx
+  31:6  warning  React Hook useEffect has a missing dependency: 'fetchSections'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\working\sharenow\src\components\VariantDialog.tsx
+  14:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\working\sharenow\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\sonner.tsx
+  28:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\working\sharenow\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\working\sharenow\src\pages\Auth.tsx
+   69:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\pages\ClientGallery.tsx
+   51:6   warning  React Hook useEffect has a missing dependency: 'fetchGallery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  104:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\pages\Dashboard.tsx
+  42:6   warning  React Hook useEffect has a missing dependency: 'checkAuth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  68:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\pages\ManageGallery.tsx
+   56:6   warning  React Hook useEffect has missing dependencies: 'checkAuth' and 'fetchGallery'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   80:21  error    Unexpected any. Specify a different type                                                                                           @typescript-eslint/no-explicit-any
+  117:21  error    Unexpected any. Specify a different type                                                                                           @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\pages\PrintOrders.tsx
+  42:6  warning  React Hook useEffect has a missing dependency: 'checkAuth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\working\sharenow\src\pages\Store.tsx
+   15:44  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   16:59  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   19:58  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   20:58  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   23:58  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   27:6   warning  React Hook useEffect has a missing dependency: 'checkAuth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   62:49  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   80:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   96:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  104:39  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  115:39  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\src\pages\Subscription.tsx
+  34:6  warning  React Hook useEffect has a missing dependency: 'checkSubscription'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\working\sharenow\supabase\functions\create-print-order\index.ts
+  140:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\supabase\functions\customer-portal\index.ts
+  10:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\supabase\functions\get-print-pricing\index.ts
+  94:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\supabase\functions\sync-whcc-products\index.ts
+  118:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\supabase\functions\whcc-webhook\index.ts
+  60:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\working\sharenow\tailwind.config.ts
+  87:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+Γ£û 53 problems (37 errors, 16 warnings)
+

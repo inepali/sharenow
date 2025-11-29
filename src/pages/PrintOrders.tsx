@@ -6,10 +6,36 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, ExternalLink } from "lucide-react";
 
+interface OrderItem {
+  quantity: number;
+  productName: string;
+  customerPrice: number;
+}
+
+interface RevenueBreakdown {
+  photographerEarning: number;
+  wholesale: number;
+  platformEarning: number;
+}
+
+interface Order {
+  id: string;
+  order_number: string;
+  gallery: { title: string } | null;
+  created_at: string;
+  status: string;
+  customer_name: string;
+  customer_email: string;
+  total_amount: number;
+  revenue_breakdown: RevenueBreakdown | null;
+  tracking_url: string | null;
+  items: OrderItem[] | null;
+}
+
 const PrintOrders = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -41,8 +67,16 @@ const PrintOrders = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
-    } catch (error: any) {
+
+      // Cast the data to Order[] since Supabase returns Json for jsonb columns
+      const typedData = (data || []).map(order => ({
+        ...order,
+        revenue_breakdown: order.revenue_breakdown as unknown as RevenueBreakdown | null,
+        items: order.items as unknown as OrderItem[] | null
+      })) as Order[];
+
+      setOrders(typedData);
+    } catch (error: unknown) {
       console.error("Error fetching orders:", error);
     } finally {
       setLoading(false);
@@ -169,7 +203,7 @@ const PrintOrders = () => {
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-sm font-medium mb-2">Items ({order.items?.length || 0})</p>
                   <div className="space-y-1">
-                    {order.items?.map((item: any, idx: number) => (
+                    {order.items?.map((item, idx) => (
                       <div key={idx} className="text-sm text-muted-foreground">
                         {item.quantity}x {item.productName} - ${item.customerPrice?.toFixed(2)}
                       </div>

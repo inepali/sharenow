@@ -23,7 +23,7 @@ const Auth = () => {
     // Check if this is a password recovery link
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
-    
+
     if (type === 'recovery') {
       setIsResetPassword(true);
       return;
@@ -48,7 +48,7 @@ const Auth = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast.error("Please enter your email");
       return;
@@ -62,12 +62,13 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      
+
       toast.success("Password reset link sent! Please check your email.");
       setIsForgotPassword(false);
       setEmail("");
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ const Auth = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password || !confirmPassword) {
       toast.error("Please fill in all fields");
       return;
@@ -99,12 +100,13 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      
+
       toast.success("Password updated successfully!");
       setIsResetPassword(false);
       navigate("/dashboard");
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -112,7 +114,7 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
@@ -139,7 +141,7 @@ const Auth = () => {
         });
 
         if (error) throw error;
-        
+
         toast.success("Account created! Please check your email to verify.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -155,11 +157,12 @@ const Auth = () => {
           }
           return;
         }
-        
+
         toast.success("Welcome back!");
       }
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

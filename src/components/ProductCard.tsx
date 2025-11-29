@@ -16,12 +16,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { Product, Variant } from "@/types";
+
 interface ProductCardProps {
-  product: any;
-  variants: any[];
+  product: Product;
+  variants: Variant[];
   onEdit: () => void;
   onAddVariant: () => void;
-  onEditVariant: (variant: any) => void;
+  onEditVariant: (variant: Variant) => void;
   onUpdate: () => void;
 }
 
@@ -39,8 +41,9 @@ export const ProductCard = ({ product, variants, onEdit, onAddVariant, onEditVar
       if (error) throw error;
       toast.success("Product deleted");
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete product";
+      toast.error(errorMessage);
     }
     setShowDeleteDialog(false);
   };
@@ -56,8 +59,9 @@ export const ProductCard = ({ product, variants, onEdit, onAddVariant, onEditVar
       if (error) throw error;
       toast.success("Variant deleted");
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete variant";
+      toast.error(errorMessage);
     }
     setDeleteVariantId(null);
   };
@@ -115,7 +119,7 @@ export const ProductCard = ({ product, variants, onEdit, onAddVariant, onEditVar
                   <div className="flex items-center gap-2">
                     <span className="font-semibold flex items-center">
                       <DollarSign className="h-4 w-4" />
-                      {parseFloat(variant.price).toFixed(2)}
+                      {variant.price.toFixed(2)}
                     </span>
                     <Button variant="ghost" size="icon" onClick={() => onEditVariant(variant)}>
                       <Edit className="h-4 w-4" />

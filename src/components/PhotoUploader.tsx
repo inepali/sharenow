@@ -90,8 +90,9 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
 
       toast.success(`${files.length} photo(s) uploaded successfully`);
       fetchPhotos();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to upload photos");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload photos";
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -191,7 +192,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           <div className="columns-2 md:columns-4 gap-2 space-y-2">
             {photos.map((photo) => {
               const isCover = currentCoverPath === photo.storage_path;
-              
+
               return (
                 <div
                   key={photo.id}

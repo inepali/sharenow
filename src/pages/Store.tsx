@@ -8,19 +8,20 @@ import { toast } from "sonner";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDialog } from "@/components/ProductDialog";
 import { VariantDialog } from "@/components/VariantDialog";
+import { Product, Variant, PartnerProduct } from "@/types";
 
 const Store = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<any[]>([]);
-  const [variants, setVariants] = useState<Record<string, any[]>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<Record<string, Variant[]>>({});
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showVariantDialog, setShowVariantDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [activeProductId, setActiveProductId] = useState<string>("");
   const [syncingProducts, setSyncingProducts] = useState(false);
-  const [partnerProducts, setPartnerProducts] = useState<any[]>([]);
+  const [partnerProducts, setPartnerProducts] = useState<PartnerProduct[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -59,7 +60,7 @@ const Store = () => {
 
         if (variantsError) throw variantsError;
 
-        const variantsByProduct: Record<string, any[]> = {};
+        const variantsByProduct: Record<string, Variant[]> = {};
         variantsData?.forEach(variant => {
           if (!variantsByProduct[variant.product_id]) {
             variantsByProduct[variant.product_id] = [];
@@ -76,8 +77,8 @@ const Store = () => {
         .eq("is_active", true);
 
       if (partnerError) throw partnerError;
-      setPartnerProducts(partnerData || []);
-    } catch (error: any) {
+      setPartnerProducts((partnerData as unknown as PartnerProduct[]) || []);
+    } catch (error: unknown) {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
@@ -88,12 +89,12 @@ const Store = () => {
     setSyncingProducts(true);
     try {
       const { data, error } = await supabase.functions.invoke('sync-whcc-products');
-      
+
       if (error) throw error;
-      
+
       toast.success(`Synced ${data.count} WHCC products`);
       fetchProducts(); // Refresh the list
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error syncing WHCC products:", error);
       toast.error("Failed to sync WHCC products");
     } finally {
@@ -101,7 +102,7 @@ const Store = () => {
     }
   };
 
-  const handleEditProduct = (product: any) => {
+  const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setShowProductDialog(true);
   };
@@ -112,7 +113,7 @@ const Store = () => {
     setShowVariantDialog(true);
   };
 
-  const handleEditVariant = (variant: any) => {
+  const handleEditVariant = (variant: Variant) => {
     setActiveProductId(variant.product_id);
     setSelectedVariant(variant);
     setShowVariantDialog(true);
@@ -160,8 +161,8 @@ const Store = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={syncWHCCProducts}
                 disabled={syncingProducts}
               >

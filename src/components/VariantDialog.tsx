@@ -6,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+import { Variant } from "@/types";
+
 interface VariantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onVariantCreated: () => void;
   productId: string;
-  variant?: any;
+  variant?: Variant;
 }
 
 export const VariantDialog = ({ open, onOpenChange, onVariantCreated, productId, variant }: VariantDialogProps) => {
@@ -19,7 +21,7 @@ export const VariantDialog = ({ open, onOpenChange, onVariantCreated, productId,
   const [formData, setFormData] = useState({
     size_name: variant?.size_name || "",
     dimensions: variant?.dimensions || "",
-    price: variant?.price || "",
+    price: variant?.price?.toString() || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +32,10 @@ export const VariantDialog = ({ open, onOpenChange, onVariantCreated, productId,
       if (variant) {
         const { error } = await supabase
           .from("product_variants")
-          .update(formData)
+          .update({
+            ...formData,
+            price: parseFloat(formData.price),
+          })
           .eq("id", variant.id);
 
         if (error) throw error;
@@ -38,7 +43,11 @@ export const VariantDialog = ({ open, onOpenChange, onVariantCreated, productId,
       } else {
         const { error } = await supabase
           .from("product_variants")
-          .insert([{ ...formData, product_id: productId }]);
+          .insert([{
+            ...formData,
+            price: parseFloat(formData.price),
+            product_id: productId
+          }]);
 
         if (error) throw error;
         toast.success("Variant created successfully");
@@ -47,8 +56,9 @@ export const VariantDialog = ({ open, onOpenChange, onVariantCreated, productId,
       onVariantCreated();
       onOpenChange(false);
       setFormData({ size_name: "", dimensions: "", price: "" });
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

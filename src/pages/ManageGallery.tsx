@@ -77,7 +77,8 @@ const ManageGallery = () => {
       setEditGalleryType(data.gallery_type || "");
       setEditDate(data.wedding_date || "");
       setEditIsActive(data.is_active);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error("Error fetching gallery:", error);
       toast.error("Failed to load gallery");
       navigate("/dashboard");
     } finally {
@@ -114,7 +115,8 @@ const ManageGallery = () => {
 
       toast.success("Gallery updated successfully");
       setEditDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error("Error updating gallery:", error);
       toast.error("Failed to update gallery");
     }
   };

@@ -19,12 +19,12 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      galleryId, 
-      customerName, 
-      customerEmail, 
-      shippingAddress, 
-      items 
+    const {
+      galleryId,
+      customerName,
+      customerEmail,
+      shippingAddress,
+      items
     } = await req.json();
 
     const supabaseClient = createClient(
@@ -36,7 +36,7 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    
+
     if (!user) {
       throw new Error('Unauthorized');
     }
@@ -55,7 +55,7 @@ serve(async (req) => {
 
       const costWithPlatformMargin = wholesaleCost * (1 + platformMargin / 100);
       const itemPrice = costWithPlatformMargin * (1 + photographerMargin / 100);
-      
+
       subtotal += itemPrice * quantity;
       totalWholesale += wholesaleCost * quantity;
       totalPlatformEarning += (wholesaleCost * (platformMargin / 100)) * quantity;
@@ -119,7 +119,7 @@ serve(async (req) => {
     //   })
     // });
     // const whccOrder = await whccResponse.json();
-    
+
     // Update order with WHCC order ID
     // await supabaseClient
     //   .from('print_orders')
@@ -130,20 +130,21 @@ serve(async (req) => {
     //   .eq('id', order.id);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         order: order,
         message: 'Order created successfully. WHCC integration pending API setup.'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in create-print-order:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ error: errorMessage }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

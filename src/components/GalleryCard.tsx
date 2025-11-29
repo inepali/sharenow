@@ -70,13 +70,13 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
           if (fileData && fileData.length > 0) {
             size += fileData[0].metadata?.size || 0;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error fetching file size:", error);
         }
       }
 
       setTotalSize(size);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching gallery stats:", error);
     } finally {
       setLoading(false);

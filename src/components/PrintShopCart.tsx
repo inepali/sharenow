@@ -9,34 +9,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 
-interface CartItem {
-  id: string;
-  photoId: string;
-  photoUrl: string;
-  productId: string;
-  productName: string;
-  partnerProductUid: string;
-  quantity: number;
-  wholesaleCost: number;
-  platformMargin: number;
-  photographerMargin: number;
-  customerPrice: number;
-}
+import { CartItem, PartnerProduct } from "@/types";
 
 interface PrintShopCartProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   galleryId: string;
-  availableProducts: any[];
+  availableProducts: PartnerProduct[];
   selectedPhoto?: { id: string; url: string };
 }
 
-export const PrintShopCart = ({ 
-  open, 
-  onOpenChange, 
-  galleryId, 
+export const PrintShopCart = ({
+  open,
+  onOpenChange,
+  galleryId,
   availableProducts,
-  selectedPhoto 
+  selectedPhoto
 }: PrintShopCartProps) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
@@ -137,12 +125,13 @@ export const PrintShopCart = ({
       toast.success("Order placed successfully!");
       setCart([]);
       onOpenChange(false);
-      
+
       // TODO: Redirect to Stripe checkout
       // window.location.href = data.checkoutUrl;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Checkout error:", error);
-      toast.error(error.message || "Failed to create order");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create order";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

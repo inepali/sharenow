@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+import { Product } from "@/types";
+
 interface ProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onProductCreated: () => void;
-  product?: any;
+  product?: Product;
 }
 
 export const ProductDialog = ({ open, onOpenChange, onProductCreated, product }: ProductDialogProps) => {
@@ -51,8 +53,9 @@ export const ProductDialog = ({ open, onOpenChange, onProductCreated, product }:
       onProductCreated();
       onOpenChange(false);
       setFormData({ name: "", description: "", category: "print" });
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
