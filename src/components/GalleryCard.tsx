@@ -77,7 +77,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
   const getCoverImageUrl = () => {
     if (!gallery.cover_image_path) return null;
-    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-dev-url.r2.dev';
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
     return `${publicUrl}/${gallery.cover_image_path}`;
   };
 
