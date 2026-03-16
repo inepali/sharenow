@@ -148,7 +148,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   };
 
   const getPhotoUrl = (path: string) => {
-    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-dev-url.r2.dev';
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
     return `${publicUrl}/${path}`;
   };
 
