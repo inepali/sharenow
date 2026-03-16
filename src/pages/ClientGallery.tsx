@@ -158,10 +158,8 @@ const ClientGallery = () => {
   };
 
   const getPhotoUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from("gallery-photos")
-      .getPublicUrl(path);
-    return data.publicUrl;
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-dev-url.r2.dev';
+    return `${publicUrl}/${path}`;
   };
 
   const downloadImage = async (url: string, filename: string) => {

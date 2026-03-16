@@ -69,11 +69,19 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
         const fileExt = file.name.split(".").pop();
         const fileName = `${galleryId}/${sectionId}/${Date.now()}-${i}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("gallery-photos")
-          .upload(fileName, file);
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('r2-presigned-url', {
+          body: { fileName, contentType: file.type }
+        });
 
-        if (uploadError) throw uploadError;
+        if (edgeError) throw edgeError;
+
+        const uploadRes = await fetch(edgeData.url, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type }
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload photo to R2");
 
         const maxOrder = photos.reduce((max, p) => Math.max(max, p.display_order), -1);
 
@@ -83,6 +91,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
             section_id: sectionId,
             storage_path: fileName,
             display_order: maxOrder + i + 1,
+            file_size: file.size,
           });
 
         if (dbError) throw dbError;
@@ -102,11 +111,11 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const handleDelete = async (photo: Photo) => {
     if (!confirm("Delete this photo?")) return;
 
-    const { error: storageError } = await supabase.storage
-      .from("gallery-photos")
-      .remove([photo.storage_path]);
+    const { error: edgeError } = await supabase.functions.invoke('r2-delete-object', {
+      body: { fileName: photo.storage_path }
+    });
 
-    if (storageError) {
+    if (edgeError) {
       toast.error("Failed to delete photo from storage");
       return;
     }
@@ -139,10 +148,8 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   };
 
   const getPhotoUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from("gallery-photos")
-      .getPublicUrl(path);
-    return data.publicUrl;
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-dev-url.r2.dev';
+    return `${publicUrl}/${path}`;
   };
 
   if (loading) {

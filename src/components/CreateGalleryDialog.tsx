@@ -78,7 +78,7 @@ export const CreateGalleryDialog = ({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast.error("You must be logged in");
         return;
@@ -93,13 +93,24 @@ export const CreateGalleryDialog = ({
         const fileName = `${slug}-cover.${fileExt}`;
         const filePath = `covers/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("gallery-photos")
-          .upload(filePath, coverImage);
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('r2-presigned-url', {
+          body: { fileName: filePath, contentType: coverImage.type }
+        });
 
-        if (uploadError) {
+        if (edgeError) {
+          toast.error("Failed to get upload URL");
+          throw edgeError;
+        }
+
+        const uploadRes = await fetch(edgeData.url, {
+          method: 'PUT',
+          body: coverImage,
+          headers: { 'Content-Type': coverImage.type }
+        });
+
+        if (!uploadRes.ok) {
           toast.error("Failed to upload cover image");
-          throw uploadError;
+          throw new Error("R2 upload failed");
         }
 
         coverImagePath = filePath;
@@ -121,13 +132,13 @@ export const CreateGalleryDialog = ({
       if (error) throw error;
 
       toast.success("Gallery created successfully!");
-      
+
       setTitle("");
       setGalleryType("");
       setWeddingDate("");
       setDescription("");
       setCoverImage(null);
-      
+
       onGalleryCreated();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create gallery";

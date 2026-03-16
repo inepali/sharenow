@@ -47,7 +47,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
       // Get all photos for these sections
       const { data: photos } = await supabase
         .from("photos")
-        .select("storage_path")
+        .select("file_size")
         .in("section_id", sectionIds);
 
       if (!photos) {
@@ -57,24 +57,8 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
       setPhotoCount(photos.length);
 
-      // Calculate total size by fetching file metadata
-      let size = 0;
-      for (const photo of photos) {
-        try {
-          const { data: fileData } = await supabase.storage
-            .from("gallery-photos")
-            .list(photo.storage_path.split("/").slice(0, -1).join("/"), {
-              search: photo.storage_path.split("/").pop()
-            });
-
-          if (fileData && fileData.length > 0) {
-            size += fileData[0].metadata?.size || 0;
-          }
-        } catch (error: unknown) {
-          console.error("Error fetching file size:", error);
-        }
-      }
-
+      // Calculate total size using the database column
+      const size = (photos as any[]).reduce((acc, photo) => acc + (photo.file_size || 0), 0);
       setTotalSize(size);
     } catch (error: unknown) {
       console.error("Error fetching gallery stats:", error);
@@ -93,10 +77,8 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
   const getCoverImageUrl = () => {
     if (!gallery.cover_image_path) return null;
-    const { data } = supabase.storage
-      .from("gallery-photos")
-      .getPublicUrl(gallery.cover_image_path);
-    return data.publicUrl;
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-dev-url.r2.dev';
+    return `${publicUrl}/${gallery.cover_image_path}`;
   };
 
   const handleDelete = async () => {
