@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Upload, X, Download, Image, FolderInput } from "lucide-react";
 import {
@@ -33,6 +34,9 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0); // 0–100 per file
+  const [uploadFileIndex, setUploadFileIndex] = useState(0); // 1-based current file
+  const [uploadTotal, setUploadTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
 
@@ -87,9 +91,29 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setUploadTotal(files.length);
+    setUploadProgress(0);
+
+    // Helper: upload a single file via XHR for progress tracking
+    const uploadFileXHR = (url: string, file: File): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(file);
+      });
 
     try {
       for (let i = 0; i < files.length; i++) {
+        setUploadFileIndex(i + 1);
+        setUploadProgress(0);
         const file = files[i];
         const fileExt = file.name.split(".").pop();
         const fileName = `${galleryId}/${sectionId}/${Date.now()}-${i}.${fileExt}`;
@@ -100,13 +124,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
 
         if (edgeError) throw edgeError;
 
-        const uploadRes = await fetch(edgeData.url, {
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': file.type }
-        });
-
-        if (!uploadRes.ok) throw new Error("Failed to upload photo to R2");
+        await uploadFileXHR(edgeData.url, file);
 
         const maxOrder = photos.reduce((max, p) => Math.max(max, p.display_order), -1);
 
@@ -128,6 +146,9 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       toast.error(errorMessage);
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      setUploadFileIndex(0);
+      setUploadTotal(0);
       e.target.value = "";
     }
   };
@@ -224,12 +245,23 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
               >
                 <span>
                   <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? "Uploading..." : "Upload Photos"}
+                  {uploading ? `Uploading ${uploadFileIndex} of ${uploadTotal}…` : "Upload Photos"}
                 </span>
               </Button>
             </label>
           </div>
         </div>
+
+        {/* Upload progress bar */}
+        {uploading && (
+          <div className="space-y-1.5 pb-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>File {uploadFileIndex} of {uploadTotal}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
+          </div>
+        )}
 
         {photos.length === 0 ? (
           <div className="text-center py-12 gradient-card rounded-lg">
