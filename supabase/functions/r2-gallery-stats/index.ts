@@ -1,13 +1,12 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, DeleteObjectCommand, DeleteObjectsCommand } from "npm:@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command } from "npm:@aws-sdk/client-s3";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -18,11 +17,10 @@ serve(async (req) => {
             throw new Error('Unauthorized');
         }
 
-        const body = await req.json();
-        const { fileName, fileNames } = body;
+        const { prefix } = await req.json();
 
-        if (!fileName && (!fileNames || !Array.isArray(fileNames) || fileNames.length === 0)) {
-            throw new Error('fileName or a non-empty fileNames array is required');
+        if (!prefix) {
+            throw new Error('prefix is required');
         }
 
         const accountId = Deno.env.get('R2_ACCOUNT_ID');
@@ -43,25 +41,32 @@ serve(async (req) => {
             },
         });
 
-        if (fileNames && fileNames.length > 0) {
-            const command = new DeleteObjectsCommand({
+        // Use ListObjectsV2 to sum size and count
+        let totalSize = 0;
+        let photoCount = 0;
+        let isTruncated = true;
+        let continuationToken: string | undefined = undefined;
+
+        while (isTruncated) {
+            const command: any = new ListObjectsV2Command({
                 Bucket: bucketName,
-                Delete: {
-                    Objects: fileNames.map((name: string) => ({ Key: name })),
-                    Quiet: false,
-                },
+                Prefix: prefix,
+                ContinuationToken: continuationToken,
             });
-            await S3.send(command);
-        } else if (fileName) {
-            const command = new DeleteObjectCommand({
-                Bucket: bucketName,
-                Key: fileName,
-            });
-            await S3.send(command);
+
+            const response: any = await S3.send(command);
+
+            if (response.Contents) {
+                photoCount += response.Contents.length;
+                totalSize += response.Contents.reduce((acc: number, obj: any) => acc + (obj.Size || 0), 0);
+            }
+
+            isTruncated = response.IsTruncated || false;
+            continuationToken = response.NextContinuationToken;
         }
 
         return new Response(
-            JSON.stringify({ success: true }),
+            JSON.stringify({ totalSize, photoCount }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     } catch (error: any) {

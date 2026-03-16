@@ -27,6 +27,7 @@ interface Gallery {
   is_active: boolean;
   created_at: string;
   cover_image_path: string | null;
+  access_pin: string | null;
 }
 
 const Dashboard = () => {

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Upload, Pencil, Images } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Switch } from "@/components/ui/switch";
 import { SectionManager } from "@/components/SectionManager";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -20,6 +21,7 @@ interface Gallery {
   wedding_date: string | null;
   slug: string;
   is_active: boolean;
+  access_pin: string | null;
 }
 
 const GALLERY_TYPES = [
@@ -47,6 +49,7 @@ const ManageGallery = () => {
   const [editGalleryType, setEditGalleryType] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editPin, setEditPin] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -77,6 +80,7 @@ const ManageGallery = () => {
       setEditGalleryType(data.gallery_type || "");
       setEditDate(data.wedding_date || "");
       setEditIsActive(data.is_active);
+      setEditPin(data.access_pin || "");
     } catch (error: unknown) {
       console.error("Error fetching gallery:", error);
       toast.error("Failed to load gallery");
@@ -100,6 +104,7 @@ const ManageGallery = () => {
           gallery_type: editGalleryType || null,
           wedding_date: editDate || null,
           is_active: editIsActive,
+          access_pin: editPin || null,
         })
         .eq("id", id);
 
@@ -111,6 +116,7 @@ const ManageGallery = () => {
         gallery_type: editGalleryType || null,
         wedding_date: editDate || null,
         is_active: editIsActive,
+        access_pin: editPin || null,
       } : null);
 
       toast.success("Gallery updated successfully");
@@ -139,9 +145,7 @@ const ManageGallery = () => {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Images className="w-5 h-5 text-primary" />
-            </div>
+            <img src={logo} alt="Share My Shoot Logo" className="w-10 h-10 object-contain" />
             <h1 className="text-2xl font-serif">Share My Shoot</h1>
           </div>
         </div>
@@ -196,6 +200,16 @@ const ManageGallery = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pin">Access PIN (4 Digits)</Label>
+                    <Input
+                      id="pin"
+                      value={editPin}
+                      onChange={(e) => setEditPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="e.g. 1234"
+                      maxLength={4}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="date">Wedding Date</Label>

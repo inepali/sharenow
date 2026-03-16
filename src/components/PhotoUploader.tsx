@@ -4,13 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, X, Download, Image } from "lucide-react";
+import { Upload, X, Download, Image, FolderInput } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Photo {
   id: string;
   storage_path: string;
   display_order: number;
   caption: string | null;
+}
+
+interface Section {
+  id: string;
+  title: string;
 }
 
 interface PhotoUploaderProps {
@@ -20,6 +31,7 @@ interface PhotoUploaderProps {
 
 export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
@@ -27,6 +39,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   useEffect(() => {
     fetchPhotos();
     fetchGalleryCover();
+    fetchAllSections();
   }, [sectionId]);
 
   const fetchGalleryCover = async () => {
@@ -38,6 +51,18 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
 
     if (!error && data) {
       setCurrentCoverPath(data.cover_image_path);
+    }
+  };
+
+  const fetchAllSections = async () => {
+    const { data, error } = await supabase
+      .from("sections")
+      .select("id, title")
+      .eq("gallery_id", galleryId)
+      .order("display_order", { ascending: true });
+
+    if (!error && data) {
+      setSections(data);
     }
   };
 
@@ -91,7 +116,6 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
             section_id: sectionId,
             storage_path: fileName,
             display_order: maxOrder + i + 1,
-            file_size: file.size,
           });
 
         if (dbError) throw dbError;
@@ -147,6 +171,20 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     }
   };
 
+  const handleMovePhoto = async (photo: Photo, targetSectionId: string) => {
+    const { error } = await supabase
+      .from("photos")
+      .update({ section_id: targetSectionId })
+      .eq("id", photo.id);
+
+    if (error) {
+      toast.error("Failed to move photo");
+    } else {
+      toast.success("Photo moved successfully");
+      fetchPhotos(); // Refresh the current section's photos
+    }
+  };
+
   const getPhotoUrl = (path: string) => {
     const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
     return `${publicUrl}/${path}`;
@@ -160,6 +198,9 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       </Card>
     );
   }
+
+  // Filter out the current section for the move dropdown
+  const otherSections = sections.filter(s => s.id !== sectionId);
 
   return (
     <div className="space-y-6">
@@ -215,34 +256,64 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                     alt={photo.caption || "Wedding photo"}
                     className="w-full h-auto object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center gap-2 p-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(photo)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center p-2">
+
+                    {/* Top Action Bar */}
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      {otherSections.length > 0 && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                              <FolderInput className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Move to...</div>
+                            {otherSections.map((section) => (
+                              <DropdownMenuItem
+                                key={section.id}
+                                onClick={() => handleMovePhoto(photo, section.id)}
+                              >
+                                {section.title}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
-                    {!isCover && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full"
-                        onClick={() => handleSetAsCover(photo)}
-                      >
-                        <Image className="w-4 h-4 mr-2" />
-                        Set as Cover
-                      </Button>
-                    )}
+
+                    {/* Bottom Action Bar */}
+                    <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1"
+                          onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => handleDelete(photo)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {!isCover && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full"
+                          onClick={() => handleSetAsCover(photo)}
+                        >
+                          <Image className="w-4 h-4 mr-2" />
+                          Set as Cover
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

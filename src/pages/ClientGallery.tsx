@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Download, Camera, Printer } from "lucide-react";
+import { Heart, Download, Camera, Printer, Lock, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import logo from "@/assets/logo.png";
@@ -15,6 +16,8 @@ interface Gallery {
   gallery_type: string | null;
   wedding_date: string | null;
   description: string | null;
+  cover_image_path?: string | null;
+  access_pin?: string | null;
 }
 
 interface Section {
@@ -36,6 +39,10 @@ const ClientGallery = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [printSelection, setPrintSelection] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [previewPhotos, setPreviewPhotos] = useState<Photo[]>([]);
+  const [previewIndex, setPreviewIndex] = useState<number>(-1);
   const [sessionId] = useState(() => {
     let id = localStorage.getItem("gallery-session-id");
     if (!id) {
@@ -51,6 +58,25 @@ const ClientGallery = () => {
     }
   }, [slug]);
 
+  const openPreview = (photosList: Photo[], index: number) => {
+    setPreviewPhotos(photosList);
+    setPreviewIndex(index);
+  };
+
+  const closePreview = () => {
+    setPreviewIndex(-1);
+  };
+
+  const nextPreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev < previewPhotos.length - 1 ? prev + 1 : 0));
+  };
+
+  const prevPreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev > 0 ? prev - 1 : previewPhotos.length - 1));
+  };
+
   const fetchGallery = async () => {
     try {
       const { data: galleryData, error: galleryError } = await supabase
@@ -63,6 +89,18 @@ const ClientGallery = () => {
       if (galleryError) throw galleryError;
 
       setGallery(galleryData);
+
+      // Check if gallery is PIN protected
+      if (galleryData.access_pin) {
+        const storedPin = sessionStorage.getItem(`gallery_pin_${galleryData.id}`);
+        if (storedPin === galleryData.access_pin) {
+          setIsPinVerified(true);
+        } else {
+          setIsPinVerified(false);
+        }
+      } else {
+        setIsPinVerified(true);
+      }
 
       const { data: sectionsData, error: sectionsError } = await supabase
         .from("sections")
@@ -227,6 +265,18 @@ const ClientGallery = () => {
     );
   }
 
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (gallery?.access_pin && pinInput === gallery.access_pin) {
+      sessionStorage.setItem(`gallery_pin_${gallery.id}`, pinInput);
+      setIsPinVerified(true);
+      toast.success("Access granted");
+    } else {
+      toast.error("Incorrect PIN");
+      setPinInput("");
+    }
+  };
+
   if (!gallery) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
@@ -238,19 +288,31 @@ const ClientGallery = () => {
     );
   }
 
+  const coverImageUrl = gallery?.cover_image_path
+    ? `${import.meta.env.VITE_R2_PUBLIC_URL}/${gallery.cover_image_path}`
+    : null;
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="gradient-hero border-b">
-        <div className="container mx-auto px-4 py-12 text-center">
-          <div className="mb-6">
-            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto mix-blend-darken dark:mix-blend-lighten" />
+      <header
+        className={`border-b relative ${!coverImageUrl ? "gradient-hero" : ""}`}
+        style={coverImageUrl ? {
+          backgroundImage: `url(${coverImageUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        } : {}}
+      >
+        {coverImageUrl && <div className="absolute inset-0 bg-black/50 z-0"></div>}
+        <div className="container mx-auto px-4 py-12 text-center relative z-10 text-white">
+          <div className="mb-6 bg-white/10 backdrop-blur-md p-4 rounded-full inline-block">
+            <img src={logo} alt="Share My Shoot Logo" className="w-24 h-24 mx-auto mix-blend-screen mix-blend-darken dark:mix-blend-lighten" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-serif mb-3">{gallery.title}</h1>
+          <h1 className="text-4xl md:text-5xl font-serif mb-3 drop-shadow-md">{gallery.title}</h1>
           {gallery.gallery_type && (
-            <p className="text-xl text-foreground/80 mb-2">{gallery.gallery_type}</p>
+            <p className="text-xl text-white/90 mb-2 drop-shadow-md">{gallery.gallery_type}</p>
           )}
           {gallery.wedding_date && (
-            <p className="text-muted-foreground mb-4">
+            <p className="text-white/80 mb-4 drop-shadow-md">
               {new Date(gallery.wedding_date).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -259,255 +321,335 @@ const ClientGallery = () => {
             </p>
           )}
           {gallery.description && (
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">{gallery.description}</p>
+            <p className="text-white/80 max-w-2xl mx-auto mb-6 drop-shadow-md">{gallery.description}</p>
           )}
-          <Button onClick={downloadGallery} variant="secondary" size="lg" className="mt-4">
-            <Download className="w-4 h-4 mr-2" />
-            Download Entire Gallery
-          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12">
-        {sections.length === 0 ? (
-          <Card className="p-12 text-center gradient-card">
-            <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-2xl font-serif mb-2">Gallery Coming Soon</h3>
-            <p className="text-muted-foreground">
-              Photos will be added to this gallery shortly. Check back soon!
+      {!isPinVerified ? (
+        <main className="container mx-auto px-4 py-24 flex items-center justify-center">
+          <Card className="p-8 max-w-md w-full text-center gradient-card shadow-lg">
+            <Lock className="w-12 h-12 text-primary mx-auto mb-6" />
+            <h2 className="text-2xl font-serif mb-2">Private Gallery</h2>
+            <p className="text-muted-foreground mb-8">
+              Please enter the 4-digit PIN provided by your photographer to view these photos.
             </p>
+            <form onSubmit={handlePinSubmit} className="space-y-4">
+              <Input
+                type="password"
+                placeholder="Enter 4-digit PIN"
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                className="text-center text-xl tracking-widest h-14"
+                maxLength={4}
+                required
+              />
+              <Button type="submit" className="w-full h-12 text-lg">
+                Unlock Gallery
+              </Button>
+            </form>
           </Card>
-        ) : (
-          <Tabs defaultValue={sections[0]?.id} className="w-full">
-            <TabsList className="w-full justify-start mb-8 flex-wrap h-auto bg-transparent p-0 gap-6 border-b pb-4">
-              <div className="flex flex-wrap gap-6 mr-auto">
-                {sections.map((section) => (
+        </main>
+      ) : (
+        <main className="container mx-auto px-4 py-12">
+          {sections.length === 0 ? (
+            <Card className="p-12 text-center gradient-card">
+              <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-2xl font-serif mb-2">Gallery Coming Soon</h3>
+              <p className="text-muted-foreground">
+                Photos will be added to this gallery shortly. Check back soon!
+              </p>
+            </Card>
+          ) : (
+            <Tabs defaultValue={sections[0]?.id} className="w-full">
+              <TabsList className="w-full justify-start mb-8 flex-wrap h-auto bg-transparent p-0 gap-6 border-b pb-4">
+                <div className="flex flex-wrap gap-6 mr-auto">
+                  {sections.map((section) => (
+                    <TabsTrigger
+                      key={section.id}
+                      value={section.id}
+                      className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base"
+                    >
+                      {section.title}
+                    </TabsTrigger>
+                  ))}
+                </div>
+                <div className="flex gap-6 items-center">
                   <TabsTrigger
-                    key={section.id}
-                    value={section.id}
-                    className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base"
+                    value="favorites"
+                    className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base flex items-center gap-2"
                   >
-                    {section.title}
+                    <Heart className="w-4 h-4" />
+                    Favorites ({favorites.size})
                   </TabsTrigger>
-                ))}
-              </div>
-              <div className="flex gap-6">
-                <TabsTrigger
-                  value="favorites"
-                  className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base flex items-center gap-2"
-                >
-                  <Heart className="w-4 h-4" />
-                  Favorites ({favorites.size})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="print"
-                  className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base flex items-center gap-2"
-                >
-                  <Printer className="w-4 h-4" />
-                  Print ({printSelection.size})
-                </TabsTrigger>
-              </div>
-            </TabsList>
+                  <TabsTrigger
+                    value="print"
+                    className="px-0 bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:rounded-none text-base flex items-center gap-2"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print ({printSelection.size})
+                  </TabsTrigger>
+                  <Button onClick={downloadGallery} variant="secondary" size="sm" className="ml-2">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Gallery
+                  </Button>
+                </div>
+              </TabsList>
 
-            {sections.map((section) => (
-              <TabsContent key={section.id} value={section.id}>
-                <h2 className="text-3xl font-serif mb-6 text-center">{section.title}</h2>
+              {sections.map((section) => (
+                <TabsContent key={section.id} value={section.id}>
+                  <h2 className="text-3xl font-serif mb-6 text-center">{section.title}</h2>
 
-                {section.photos.length === 0 ? (
-                  <Card className="p-8 text-center gradient-card">
-                    <p className="text-muted-foreground">No photos in this section yet</p>
+                  {section.photos.length === 0 ? (
+                    <Card className="p-8 text-center gradient-card">
+                      <p className="text-muted-foreground">No photos in this section yet</p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {section.photos.map((photo, index) => (
+                        <div
+                          key={photo.id}
+                          className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                          onClick={() => openPreview(section.photos, index)}
+                        >
+                          <img
+                            src={getPhotoUrl(photo.storage_path)}
+                            alt={photo.caption || "Wedding photo"}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
+                            <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(photo.id); }}
+                              >
+                                <Heart
+                                  className={`w-4 h-4 mr-2 ${favorites.has(photo.id) ? "fill-primary text-primary" : ""
+                                    }`}
+                                />
+                                {favorites.has(photo.id) ? "Favorited" : "Favorite"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); togglePrintSelection(photo.id); }}
+                              >
+                                <Printer
+                                  className={`w-4 h-4 mr-2 ${printSelection.has(photo.id) ? "fill-primary text-primary" : ""
+                                    }`}
+                                />
+                                {printSelection.has(photo.id) ? "Selected" : "Print"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadImage(
+                                    getPhotoUrl(photo.storage_path),
+                                    photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
+                                  );
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+
+              <TabsContent value="favorites">
+                <h2 className="text-3xl font-serif mb-6 text-center">My Favorites</h2>
+                {favorites.size === 0 ? (
+                  <Card className="p-12 text-center gradient-card">
+                    <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-2xl font-serif mb-2">No Favorites Yet</h3>
+                    <p className="text-muted-foreground">
+                      Click the heart icon on photos to add them to your favorites
+                    </p>
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {section.photos.map((photo) => (
-                      <div
-                        key={photo.id}
-                        className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
-                      >
-                        <img
-                          src={getPhotoUrl(photo.storage_path)}
-                          alt={photo.caption || "Wedding photo"}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
-                          <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => toggleFavorite(photo.id)}
-                            >
-                              <Heart
-                                className={`w-4 h-4 mr-2 ${favorites.has(photo.id) ? "fill-primary text-primary" : ""
-                                  }`}
-                              />
-                              {favorites.has(photo.id) ? "Favorited" : "Favorite"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => togglePrintSelection(photo.id)}
-                            >
-                              <Printer
-                                className={`w-4 h-4 mr-2 ${printSelection.has(photo.id) ? "fill-primary text-primary" : ""
-                                  }`}
-                              />
-                              {printSelection.has(photo.id) ? "Selected" : "Print"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => downloadImage(
-                                getPhotoUrl(photo.storage_path),
-                                photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
-                              )}
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
+                    {(() => {
+                      const displayPhotos = sections.flatMap((s) => s.photos).filter((p) => favorites.has(p.id));
+                      return displayPhotos.map((photo, index) => (
+                        <div
+                          key={photo.id}
+                          className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                          onClick={() => openPreview(displayPhotos, index)}
+                        >
+                          <img
+                            src={getPhotoUrl(photo.storage_path)}
+                            alt={photo.caption || "Wedding photo"}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
+                            <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(photo.id); }}
+                              >
+                                <Heart className="w-4 h-4 mr-2 fill-primary text-primary" />
+                                Favorited
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); togglePrintSelection(photo.id); }}
+                              >
+                                <Printer
+                                  className={`w-4 h-4 mr-2 ${printSelection.has(photo.id) ? "fill-primary text-primary" : ""
+                                    }`}
+                                />
+                                {printSelection.has(photo.id) ? "Selected" : "Print"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadImage(
+                                    getPhotoUrl(photo.storage_path),
+                                    photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
+                                  );
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 )}
               </TabsContent>
-            ))}
 
-            <TabsContent value="favorites">
-              <h2 className="text-3xl font-serif mb-6 text-center">My Favorites</h2>
-              {favorites.size === 0 ? (
-                <Card className="p-12 text-center gradient-card">
-                  <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-2xl font-serif mb-2">No Favorites Yet</h3>
-                  <p className="text-muted-foreground">
-                    Click the heart icon on photos to add them to your favorites
-                  </p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                  {sections
-                    .flatMap((s) => s.photos)
-                    .filter((p) => favorites.has(p.id))
-                    .map((photo) => (
-                      <div
-                        key={photo.id}
-                        className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
-                      >
-                        <img
-                          src={getPhotoUrl(photo.storage_path)}
-                          alt={photo.caption || "Wedding photo"}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
-                          <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => toggleFavorite(photo.id)}
-                            >
-                              <Heart className="w-4 h-4 mr-2 fill-primary text-primary" />
-                              Favorited
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => togglePrintSelection(photo.id)}
-                            >
-                              <Printer
-                                className={`w-4 h-4 mr-2 ${printSelection.has(photo.id) ? "fill-primary text-primary" : ""
-                                  }`}
-                              />
-                              {printSelection.has(photo.id) ? "Selected" : "Print"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => downloadImage(
-                                getPhotoUrl(photo.storage_path),
-                                photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
-                              )}
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
+              <TabsContent value="print">
+                <h2 className="text-3xl font-serif mb-6 text-center">Print Selection</h2>
+                {printSelection.size === 0 ? (
+                  <Card className="p-12 text-center gradient-card">
+                    <Printer className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-2xl font-serif mb-2">No Photos Selected</h3>
+                    <p className="text-muted-foreground">
+                      Click the print icon on photos to select them for printing
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {(() => {
+                      const displayPhotos = sections.flatMap((s) => s.photos).filter((p) => printSelection.has(p.id));
+                      return displayPhotos.map((photo, index) => (
+                        <div
+                          key={photo.id}
+                          className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                          onClick={() => openPreview(displayPhotos, index)}
+                        >
+                          <img
+                            src={getPhotoUrl(photo.storage_path)}
+                            alt={photo.caption || "Wedding photo"}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
+                            <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(photo.id); }}
+                              >
+                                <Heart
+                                  className={`w-4 h-4 mr-2 ${favorites.has(photo.id) ? "fill-primary text-primary" : ""
+                                    }`}
+                                />
+                                {favorites.has(photo.id) ? "Favorited" : "Favorite"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={(e) => { e.stopPropagation(); togglePrintSelection(photo.id); }}
+                              >
+                                <Printer className="w-4 h-4 mr-2 fill-primary text-primary" />
+                                Selected
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadImage(
+                                    getPhotoUrl(photo.storage_path),
+                                    photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
+                                  );
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </TabsContent>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+        </main>
+      )}
 
-            <TabsContent value="print">
-              <h2 className="text-3xl font-serif mb-6 text-center">Print Selection</h2>
-              {printSelection.size === 0 ? (
-                <Card className="p-12 text-center gradient-card">
-                  <Printer className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-2xl font-serif mb-2">No Photos Selected</h3>
-                  <p className="text-muted-foreground">
-                    Click the print icon on photos to select them for printing
-                  </p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                  {sections
-                    .flatMap((s) => s.photos)
-                    .filter((p) => printSelection.has(p.id))
-                    .map((photo) => (
-                      <div
-                        key={photo.id}
-                        className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth"
-                      >
-                        <img
-                          src={getPhotoUrl(photo.storage_path)}
-                          alt={photo.caption || "Wedding photo"}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">
-                          <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => toggleFavorite(photo.id)}
-                            >
-                              <Heart
-                                className={`w-4 h-4 mr-2 ${favorites.has(photo.id) ? "fill-primary text-primary" : ""
-                                  }`}
-                              />
-                              {favorites.has(photo.id) ? "Favorited" : "Favorite"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => togglePrintSelection(photo.id)}
-                            >
-                              <Printer className="w-4 h-4 mr-2 fill-primary text-primary" />
-                              Selected
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => downloadImage(
-                                getPhotoUrl(photo.storage_path),
-                                photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`
-                              )}
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
+      {previewIndex >= 0 && previewPhotos[previewIndex] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={closePreview}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 right-4 text-white hover:bg-white/20"
+            onClick={closePreview}
+          >
+            <X className="w-6 h-6" />
+          </Button>
+
+          {previewPhotos.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-4 text-white hover:bg-white/20 h-12 w-12 rounded-full"
+              onClick={prevPreview}
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </Button>
+          )}
+
+          <img
+            src={getPhotoUrl(previewPhotos[previewIndex].storage_path)}
+            alt={previewPhotos[previewIndex].caption || "Preview"}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {previewPhotos.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 text-white hover:bg-white/20 h-12 w-12 rounded-full"
+              onClick={nextPreview}
+            >
+              <ChevronRight className="w-8 h-8" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

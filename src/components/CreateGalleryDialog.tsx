@@ -116,6 +116,8 @@ export const CreateGalleryDialog = ({
         coverImagePath = filePath;
       }
 
+      const accessPin = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0');
+
       const { error } = await supabase
         .from("galleries")
         .insert({
@@ -125,6 +127,7 @@ export const CreateGalleryDialog = ({
           wedding_date: weddingDate || null,
           description: description.trim() || null,
           cover_image_path: coverImagePath,
+          access_pin: accessPin,
           slug,
           is_active: true,
         });

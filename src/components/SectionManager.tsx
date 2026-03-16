@@ -79,19 +79,48 @@ export const SectionManager = ({
   const handleDeleteSection = async (id: string) => {
     if (!confirm("Delete this section and all its photos?")) return;
 
-    const { error } = await supabase
-      .from("sections")
-      .delete()
-      .eq("id", id);
+    setLoading(true);
 
-    if (error) {
-      toast.error("Failed to delete section");
-    } else {
+    try {
+      // 1. Fetch all photos for this section
+      const { data: photos, error: fetchError } = await supabase
+        .from("photos")
+        .select("storage_path")
+        .eq("section_id", id);
+
+      if (fetchError) throw fetchError;
+
+      // 2. Delete photos from R2
+      if (photos && photos.length > 0) {
+        const fileNames = photos.map(p => p.storage_path);
+        const { error: edgeError } = await supabase.functions.invoke('r2-delete-object', {
+          body: { fileNames }
+        });
+
+        if (edgeError) {
+          console.error("Failed to delete photos from R2:", edgeError);
+          toast.error("Warning: Some photos could not be deleted from storage");
+        }
+      }
+
+      // 3. Delete section from database (photos will be cascade deleted or trigger deleted)
+      const { error: dbError } = await supabase
+        .from("sections")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) throw dbError;
+
       toast.success("Section deleted");
       if (selectedSection === id) {
         onSelectSection(null);
       }
       fetchSections();
+    } catch (error) {
+      console.error("Error deleting section:", error);
+      toast.error("Failed to delete section");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,11 +148,10 @@ export const SectionManager = ({
         {sections.map((section) => (
           <div
             key={section.id}
-            className={`flex items-center justify-between p-3 rounded-lg border transition-smooth cursor-pointer ${
-              selectedSection === section.id
+            className={`flex items-center justify-between p-3 rounded-lg border transition-smooth cursor-pointer ${selectedSection === section.id
                 ? "bg-primary/10 border-primary"
                 : "hover:bg-muted"
-            }`}
+              }`}
             onClick={() => onSelectSection(section.id)}
           >
             <div className="flex items-center gap-2">
