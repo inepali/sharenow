@@ -12,6 +12,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getR2Url } from "@/lib/r2";
 
 interface Photo {
   id: string;
@@ -34,27 +45,31 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0); // 0–100 per file
-  const [uploadFileIndex, setUploadFileIndex] = useState(0); // 1-based current file
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadFileIndex, setUploadFileIndex] = useState(0);
   const [uploadTotal, setUploadTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [gallerySlug, setGallerySlug] = useState("");
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
+  const [deletePhotoId, setDeletePhotoId] = useState<Photo | null>(null);
 
   useEffect(() => {
     fetchPhotos();
     fetchGalleryCover();
     fetchAllSections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
   const fetchGalleryCover = async () => {
     const { data, error } = await supabase
       .from("galleries")
-      .select("cover_image_path")
+      .select("cover_image_path, slug")
       .eq("id", galleryId)
       .single();
 
     if (!error && data) {
       setCurrentCoverPath(data.cover_image_path);
+      setGallerySlug(data.slug || "");
     }
   };
 
@@ -94,49 +109,60 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     setUploadTotal(files.length);
     setUploadProgress(0);
 
-    // Helper: upload a single file via XHR for progress tracking
-    const uploadFileXHR = (url: string, file: File): Promise<void> =>
-      new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', url);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        };
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.send(file);
-      });
-
     try {
       for (let i = 0; i < files.length; i++) {
         setUploadFileIndex(i + 1);
         setUploadProgress(0);
         const file = files[i];
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${galleryId}/${sectionId}/${Date.now()}-${i}.${fileExt}`;
 
-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('r2-presigned-url', {
-          body: { fileName, contentType: file.type }
-        });
+        const currentSection = sections.find(s => s.id === sectionId);
+        const sectionTitle = currentSection?.title || "section";
 
-        if (edgeError) throw edgeError;
-
-        await uploadFileXHR(edgeData.url, file);
-
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("galleryId", galleryId);
+        formData.append("sectionId", sectionId);
+        formData.append("gallerySlug", gallerySlug);
+        formData.append("sectionTitle", sectionTitle);
+        
         const maxOrder = photos.reduce((max, p) => Math.max(max, p.display_order), -1);
+        formData.append("displayOrder", (maxOrder + i + 1).toString());
 
-        const { error: dbError } = await supabase
-          .from("photos")
-          .insert({
-            section_id: sectionId,
-            storage_path: fileName,
-            display_order: maxOrder + i + 1,
-          });
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
 
-        if (dbError) throw dbError;
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "http://localhost:3001/api/upload");
+          
+          if (token) {
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          }
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              setUploadProgress(Math.round((event.loaded / event.total) * 100));
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              let errorMsg = "Upload failed";
+              try {
+                const resJson = JSON.parse(xhr.responseText);
+                errorMsg = resJson.error || errorMsg;
+              } catch (e) {
+                // Ignore parse errors and keep default message
+              }
+              reject(new Error(errorMsg));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Network error during upload"));
+          xhr.send(formData);
+        });
       }
 
       toast.success(`${files.length} photo(s) uploaded successfully`);
@@ -152,12 +178,41 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       e.target.value = "";
     }
   };
-
   const handleDelete = async (photo: Photo) => {
-    if (!confirm("Delete this photo?")) return;
+    let fileNames = [photo.storage_path];
+    const parts = photo.storage_path.split("/");
+    if (parts.length === 4) {
+      const fileName = parts.pop() || "";
+      const dirPath = parts.join("/");
+      const dotIndex = fileName.lastIndexOf(".");
+      const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+      
+      fileNames = [
+        photo.storage_path,
+        `${dirPath}/${baseName}-lg.webp`,
+        `${dirPath}/${baseName}-md.webp`,
+        `${dirPath}/${baseName}-sm.webp`
+      ];
+    } else if (parts.length === 5 && parts[0] === "Gallery") {
+      const fileName = parts.pop() || "";
+      const dirPath = parts.join("/");
+      const dotIndex = fileName.lastIndexOf(".");
+      const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+      
+      const thumbName = baseName === "original" ? "thumb.webp" : `${baseName}-sm.webp`;
+      const mediumName = baseName === "original" ? "medium.webp" : `${baseName}-md.webp`;
+      const largeName = baseName === "original" ? "large.webp" : `${baseName}-lg.webp`;
+
+      fileNames = [
+        photo.storage_path,
+        `${dirPath}/${largeName}`,
+        `${dirPath}/${mediumName}`,
+        `${dirPath}/${thumbName}`
+      ];
+    }
 
     const { error: edgeError } = await supabase.functions.invoke('r2-delete-object', {
-      body: { fileName: photo.storage_path }
+      body: { fileNames }
     });
 
     if (edgeError) {
@@ -176,6 +231,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       toast.success("Photo deleted");
       fetchPhotos();
     }
+    setDeletePhotoId(null);
   };
 
   const handleSetAsCover = async (photo: Photo) => {
@@ -202,13 +258,8 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       toast.error("Failed to move photo");
     } else {
       toast.success("Photo moved successfully");
-      fetchPhotos(); // Refresh the current section's photos
+      fetchPhotos();
     }
-  };
-
-  const getPhotoUrl = (path: string) => {
-    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-    return `${publicUrl}/${path}`;
   };
 
   if (loading) {
@@ -220,7 +271,6 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     );
   }
 
-  // Filter out the current section for the move dropdown
   const otherSections = sections.filter(s => s.id !== sectionId);
 
   return (
@@ -284,12 +334,12 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                     </Badge>
                   )}
                   <img
-                    src={getPhotoUrl(photo.storage_path)}
-                    alt={photo.caption || "Wedding photo"}
+                    src={getR2Url(photo.storage_path)}
+                    alt={photo.caption || "Gallery photo"}
                     className="w-full h-auto object-cover"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center p-2">
-
                     {/* Top Action Bar */}
                     <div className="absolute top-2 right-2 flex gap-2">
                       {otherSections.length > 0 && (
@@ -321,7 +371,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                           size="sm"
                           variant="secondary"
                           className="flex-1"
-                          onClick={() => window.open(getPhotoUrl(photo.storage_path), "_blank")}
+                          onClick={() => window.open(getR2Url(photo.storage_path), "_blank")}
                         >
                           <Download className="w-4 h-4" />
                         </Button>
@@ -329,7 +379,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                           size="sm"
                           variant="destructive"
                           className="flex-1"
-                          onClick={() => handleDelete(photo)}
+                          onClick={() => setDeletePhotoId(photo)}
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -353,6 +403,26 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           </div>
         )}
       </Card>
+
+      <AlertDialog open={!!deletePhotoId} onOpenChange={(open) => !open && setDeletePhotoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this photo from storage. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePhotoId && handleDelete(deletePhotoId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Photo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Upload, Pencil, Images } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { ArrowLeft, Upload, Pencil } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SectionManager } from "@/components/SectionManager";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -13,36 +12,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Gallery {
-  id: string;
-  title: string;
-  gallery_type: string | null;
-  wedding_date: string | null;
-  slug: string;
-  is_active: boolean;
-  access_pin: string | null;
-}
-
-const GALLERY_TYPES = [
-  "Adventure", "Anniversary", "Architecture", "Automotive", "Baby", "Baptism/Christening",
-  "Bar/Bat Mitzvah", "Birth", "Birthday", "Boudoir", "Bridal", "Brit", "Business",
-  "Children", "Christmas", "Commercial", "Concert", "Confirmation", "Couples", "Dance",
-  "Editorial", "Elopement", "Engagement", "Equine", "Event", "Family", "Farewell",
-  "Film", "First Communion", "Food", "General", "Graduation", "Headshots", "Holidays",
-  "Interiors", "Landscape", "Lifestyle", "Live Music", "Look Book", "Maternity",
-  "Milestones", "Mini Session", "Modeling", "Newborn", "Other", "Outdoor",
-  "Passion Portrait", "Personal Branding", "Pets", "Photo Booth", "Portraits",
-  "Pre-Wedding", "Products", "Proposal", "Quinceanera", "Real Estate",
-  "Rehearsal Dinner", "Religious", "School", "Seniors", "Sport", "Styled Shoots",
-  "Theater", "Travel", "Video", "Vow Renewal", "Wedding", "Workshop"
-];
+import { AppHeader } from "@/components/layout/AppHeader";
+import { useGallery } from "@/hooks/use-galleries";
+import { useQueryClient } from "@tanstack/react-query";
+import { GALLERY_TYPES } from "@/constants/gallery-types";
 
 const ManageGallery = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [gallery, setGallery] = useState<Gallery | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: gallery, isLoading } = useGallery(id);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -51,42 +30,14 @@ const ManageGallery = () => {
   const [editIsActive, setEditIsActive] = useState(true);
   const [editPin, setEditPin] = useState("");
 
-  useEffect(() => {
-    checkAuth();
-    if (id) {
-      fetchGallery();
-    }
-  }, [id]);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-    }
-  };
-
-  const fetchGallery = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("galleries")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-
-      setGallery(data);
-      setEditTitle(data.title);
-      setEditGalleryType(data.gallery_type || "");
-      setEditDate(data.wedding_date || "");
-      setEditIsActive(data.is_active);
-      setEditPin(data.access_pin || "");
-    } catch (error: unknown) {
-      console.error("Error fetching gallery:", error);
-      toast.error("Failed to load gallery");
-      navigate("/dashboard");
-    } finally {
-      setLoading(false);
+  const openEditDialog = () => {
+    if (gallery) {
+      setEditTitle(gallery.title);
+      setEditGalleryType(gallery.gallery_type || "");
+      setEditDate(gallery.wedding_date || "");
+      setEditIsActive(gallery.is_active);
+      setEditPin(gallery.access_pin || "");
+      setEditDialogOpen(true);
     }
   };
 
@@ -110,24 +61,16 @@ const ManageGallery = () => {
 
       if (error) throw error;
 
-      setGallery(prev => prev ? {
-        ...prev,
-        title: editTitle,
-        gallery_type: editGalleryType || null,
-        wedding_date: editDate || null,
-        is_active: editIsActive,
-        access_pin: editPin || null,
-      } : null);
-
       toast.success("Gallery updated successfully");
       setEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["gallery", id] });
     } catch (error: unknown) {
       console.error("Error updating gallery:", error);
       toast.error("Failed to update gallery");
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -142,14 +85,7 @@ const ManageGallery = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Share My Shoot Logo" className="w-10 h-10 object-contain" />
-            <h1 className="text-2xl font-serif">Share My Shoot</h1>
-          </div>
-        </div>
-      </header>
+      <AppHeader showUserMenu={false} />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -167,7 +103,7 @@ const ManageGallery = () => {
             </div>
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={openEditDialog}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit Details
                 </Button>

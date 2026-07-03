@@ -298,7 +298,7 @@ const Pricing = () => {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 Share My Shoot. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Share My Shoot. All rights reserved.</p>
         </div>
       </footer>
     </div>

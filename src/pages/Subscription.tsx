@@ -17,7 +17,7 @@ interface SubscriptionData {
   subscription_start?: string;
 }
 
-const TIER_INFO = {
+const TIER_INFO: Record<string, { name: string; monthly: string; yearly: string }> = {
   'prod_SPxBzHE0DcMZ0rQu': { name: 'Starter', monthly: '$4.99', yearly: '$49.90' },
   'prod_SPxByHE0DcMZ0rQw': { name: 'Professional', monthly: '$9.99', yearly: '$99.90' },
   'prod_SPxBzHE0DcMZ0rQy': { name: 'Studio', monthly: '$19.99', yearly: '$199.90' }
@@ -32,24 +32,16 @@ const Subscription = () => {
 
   useEffect(() => {
     checkSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkSubscription = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('check-subscription');
-
       if (error) throw error;
-
       setSubscription(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error checking subscription:', error);
       toast({
         title: "Error",
@@ -65,13 +57,11 @@ const Subscription = () => {
     try {
       setManagingPortal(true);
       const { data, error } = await supabase.functions.invoke('customer-portal');
-
       if (error) throw error;
-
       if (data?.url) {
         window.open(data.url, '_blank');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error opening customer portal:', error);
       toast({
         title: "Error",
@@ -85,7 +75,7 @@ const Subscription = () => {
 
   const getTierInfo = () => {
     if (!subscription?.product_id) return null;
-    return TIER_INFO[subscription.product_id as keyof typeof TIER_INFO];
+    return TIER_INFO[subscription.product_id] || null;
   };
 
   return (

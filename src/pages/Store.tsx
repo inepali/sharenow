@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,92 +8,34 @@ import { toast } from "sonner";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDialog } from "@/components/ProductDialog";
 import { VariantDialog } from "@/components/VariantDialog";
-import { Product, Variant, PartnerProduct } from "@/types";
+import { useProducts } from "@/hooks/use-products";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Product, Variant } from "@/types";
 
 const Store = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [variants, setVariants] = useState<Record<string, Variant[]>>({});
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useProducts();
+  const products = data?.products ?? [];
+  const variants = data?.variants ?? {};
+  const partnerProducts = data?.partnerProducts ?? [];
+
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showVariantDialog, setShowVariantDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [activeProductId, setActiveProductId] = useState<string>("");
   const [syncingProducts, setSyncingProducts] = useState(false);
-  const [partnerProducts, setPartnerProducts] = useState<PartnerProduct[]>([]);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-    fetchProducts();
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: productsData, error: productsError } = await supabase
-        .from("print_products")
-        .select("*")
-        .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (productsError) throw productsError;
-
-      setProducts(productsData || []);
-
-      if (productsData && productsData.length > 0) {
-        const { data: variantsData, error: variantsError } = await supabase
-          .from("product_variants")
-          .select("*")
-          .in("product_id", productsData.map(p => p.id))
-          .order("price", { ascending: true });
-
-        if (variantsError) throw variantsError;
-
-        const variantsByProduct: Record<string, Variant[]> = {};
-        variantsData?.forEach(variant => {
-          if (!variantsByProduct[variant.product_id]) {
-            variantsByProduct[variant.product_id] = [];
-          }
-          variantsByProduct[variant.product_id].push(variant);
-        });
-        setVariants(variantsByProduct);
-      }
-
-      // Fetch partner products
-      const { data: partnerData, error: partnerError } = await supabase
-        .from("print_partner_products")
-        .select("*")
-        .eq("is_active", true);
-
-      if (partnerError) throw partnerError;
-      setPartnerProducts((partnerData as unknown as PartnerProduct[]) || []);
-    } catch (error: unknown) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const invalidateProducts = () => queryClient.invalidateQueries({ queryKey: ["products"] });
 
   const syncWHCCProducts = async () => {
     setSyncingProducts(true);
     try {
       const { data, error } = await supabase.functions.invoke('sync-whcc-products');
-
       if (error) throw error;
-
       toast.success(`Synced ${data.count} WHCC products`);
-      fetchProducts(); // Refresh the list
+      invalidateProducts();
     } catch (error: unknown) {
       console.error("Error syncing WHCC products:", error);
       toast.error("Failed to sync WHCC products");
@@ -119,18 +61,7 @@ const Store = () => {
     setShowVariantDialog(true);
   };
 
-  const handleProductDialogClose = () => {
-    setShowProductDialog(false);
-    setSelectedProduct(null);
-  };
-
-  const handleVariantDialogClose = () => {
-    setShowVariantDialog(false);
-    setSelectedVariant(null);
-    setActiveProductId("");
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -225,7 +156,7 @@ const Store = () => {
                 onEdit={() => handleEditProduct(product)}
                 onAddVariant={() => handleAddVariant(product.id)}
                 onEditVariant={handleEditVariant}
-                onUpdate={fetchProducts}
+                onUpdate={invalidateProducts}
               />
             ))}
           </div>
@@ -234,15 +165,15 @@ const Store = () => {
 
       <ProductDialog
         open={showProductDialog}
-        onOpenChange={handleProductDialogClose}
-        onProductCreated={fetchProducts}
+        onOpenChange={() => { setShowProductDialog(false); setSelectedProduct(null); }}
+        onProductCreated={invalidateProducts}
         product={selectedProduct}
       />
 
       <VariantDialog
         open={showVariantDialog}
-        onOpenChange={handleVariantDialogClose}
-        onVariantCreated={fetchProducts}
+        onOpenChange={() => { setShowVariantDialog(false); setSelectedVariant(null); setActiveProductId(""); }}
+        onVariantCreated={invalidateProducts}
         productId={activeProductId}
         variant={selectedVariant}
       />

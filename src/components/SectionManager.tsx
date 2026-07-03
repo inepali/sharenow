@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Plus, FolderOpen, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Section {
   id: string;
@@ -25,9 +35,11 @@ export const SectionManager = ({
   const [sections, setSections] = useState<Section[]>([]);
   const [newSectionTitle, setNewSectionTitle] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleteSectionId, setDeleteSectionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [galleryId]);
 
   const fetchSections = async () => {
@@ -77,8 +89,6 @@ export const SectionManager = ({
   };
 
   const handleDeleteSection = async (id: string) => {
-    if (!confirm("Delete this section and all its photos?")) return;
-
     setLoading(true);
 
     try {
@@ -103,7 +113,7 @@ export const SectionManager = ({
         }
       }
 
-      // 3. Delete section from database (photos will be cascade deleted or trigger deleted)
+      // 3. Delete section from database
       const { error: dbError } = await supabase
         .from("sections")
         .delete()
@@ -116,11 +126,12 @@ export const SectionManager = ({
         onSelectSection(null);
       }
       fetchSections();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting section:", error);
       toast.error("Failed to delete section");
     } finally {
       setLoading(false);
+      setDeleteSectionId(null);
     }
   };
 
@@ -131,7 +142,7 @@ export const SectionManager = ({
           placeholder="New section name"
           value={newSectionTitle}
           onChange={(e) => setNewSectionTitle(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleAddSection()}
+          onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
         />
         <Button
           onClick={handleAddSection}
@@ -163,7 +174,7 @@ export const SectionManager = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteSection(section.id);
+                setDeleteSectionId(section.id);
               }}
             >
               <Trash2 className="w-4 h-4 text-destructive" />
@@ -171,6 +182,26 @@ export const SectionManager = ({
           </div>
         ))}
       </div>
+
+      <AlertDialog open={!!deleteSectionId} onOpenChange={(open) => !open && setDeleteSectionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Section?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this section and all its photos. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteSectionId && handleDeleteSection(deleteSectionId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Section
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

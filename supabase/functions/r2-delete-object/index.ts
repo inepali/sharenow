@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, DeleteObjectCommand, DeleteObjectsCommand } from "npm:@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } from "npm:@aws-sdk/client-s3";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -19,10 +19,10 @@ serve(async (req) => {
         }
 
         const body = await req.json();
-        const { fileName, fileNames } = body;
+        const { fileName, fileNames, prefix } = body;
 
-        if (!fileName && (!fileNames || !Array.isArray(fileNames) || fileNames.length === 0)) {
-            throw new Error('fileName or a non-empty fileNames array is required');
+        if (!fileName && (!fileNames || !Array.isArray(fileNames) || fileNames.length === 0) && !prefix) {
+            throw new Error('fileName, fileNames array, or prefix is required');
         }
 
         const accountId = Deno.env.get('R2_ACCOUNT_ID');
@@ -43,6 +43,36 @@ serve(async (req) => {
             },
         });
 
+        // 1. Prefix folder delete (purges all nested keys recursively)
+        if (prefix) {
+            let isTruncated = true;
+            let continuationToken: string | undefined = undefined;
+
+            while (isTruncated) {
+                const listCommand = new ListObjectsV2Command({
+                    Bucket: bucketName,
+                    Prefix: prefix,
+                    ContinuationToken: continuationToken,
+                });
+
+                const listResponse = await S3.send(listCommand);
+                if (listResponse.Contents && listResponse.Contents.length > 0) {
+                    const deleteCommand = new DeleteObjectsCommand({
+                        Bucket: bucketName,
+                        Delete: {
+                            Objects: listResponse.Contents.map((obj) => ({ Key: obj.Key })),
+                            Quiet: true,
+                        },
+                    });
+                    await S3.send(deleteCommand);
+                }
+
+                isTruncated = listResponse.IsTruncated || false;
+                continuationToken = listResponse.NextContinuationToken;
+            }
+        }
+
+        // 2. Individual file list delete
         if (fileNames && fileNames.length > 0) {
             const command = new DeleteObjectsCommand({
                 Bucket: bucketName,
@@ -64,9 +94,10 @@ serve(async (req) => {
             JSON.stringify({ success: true }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }

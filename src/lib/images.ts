@@ -1,0 +1,62 @@
+import { getR2Url } from "./r2";
+
+interface ResponsiveUrls {
+  original: string;
+  thumb: string;
+  medium: string;
+  large: string;
+}
+
+/**
+ * Given a storage path, returns responsive R2 URLs.
+ * Detects new Gallery WebP multi-size format and falls back to original path for legacy images.
+ */
+export function getResponsiveUrls(storagePath: string): ResponsiveUrls {
+  const parts = storagePath.split("/");
+  
+  // Newest format: gallerySlug/sectionTitle/photoId/filename.ext (4 segments)
+  if (parts.length === 4) {
+    const fileName = parts.pop() || "";
+    const dirPath = parts.join("/");
+    
+    const dotIndex = fileName.lastIndexOf(".");
+    const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+
+    return {
+      original: getR2Url(storagePath),
+      thumb: getR2Url(`${dirPath}/${baseName}-sm.webp`),
+      medium: getR2Url(`${dirPath}/${baseName}-md.webp`),
+      large: getR2Url(`${dirPath}/${baseName}-lg.webp`),
+    };
+  }
+
+  // Transition format: Gallery/galleryId/sectionId/photoId/filename.ext (5 segments)
+  if (parts.length === 5 && parts[0] === "Gallery") {
+    const fileName = parts.pop() || "";
+    const dirPath = parts.join("/");
+    
+    const dotIndex = fileName.lastIndexOf(".");
+    const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+    
+    // Support transitioning from 'original.webp' to custom original filenames
+    const thumbName = baseName === "original" ? "thumb.webp" : `${baseName}-sm.webp`;
+    const mediumName = baseName === "original" ? "medium.webp" : `${baseName}-md.webp`;
+    const largeName = baseName === "original" ? "large.webp" : `${baseName}-lg.webp`;
+
+    return {
+      original: getR2Url(storagePath),
+      thumb: getR2Url(`${dirPath}/${thumbName}`),
+      medium: getR2Url(`${dirPath}/${mediumName}`),
+      large: getR2Url(`${dirPath}/${largeName}`),
+    };
+  }
+
+  // Fallback for legacy images
+  const originalUrl = getR2Url(storagePath);
+  return {
+    original: originalUrl,
+    thumb: originalUrl,
+    medium: originalUrl,
+    large: originalUrl,
+  };
+}

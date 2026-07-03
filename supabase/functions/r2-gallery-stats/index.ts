@@ -49,17 +49,17 @@ serve(async (req: Request) => {
         let continuationToken: string | undefined = undefined;
 
         while (isTruncated) {
-            const command: any = new ListObjectsV2Command({
+            const command = new ListObjectsV2Command({
                 Bucket: bucketName,
                 Prefix: prefix,
                 ContinuationToken: continuationToken,
             });
 
-            const response: any = await S3.send(command);
+            const response = await S3.send(command);
 
             if (response.Contents) {
                 photoCount += response.Contents.length;
-                totalSize += response.Contents.reduce((acc: number, obj: any) => acc + (obj.Size || 0), 0);
+                totalSize += response.Contents.reduce((acc: number, obj: { Size?: number }) => acc + (obj.Size || 0), 0);
             }
 
             isTruncated = response.IsTruncated || false;
@@ -70,9 +70,10 @@ serve(async (req: Request) => {
             JSON.stringify({ totalSize, photoCount }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }

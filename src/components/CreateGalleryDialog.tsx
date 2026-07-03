@@ -11,22 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const GALLERY_TYPES = [
-  "Adventure", "Anniversary", "Architecture", "Automotive", "Baby", "Baptism/Christening",
-  "Bar/Bat Mitzvah", "Birth", "Birthday", "Boudoir", "Bridal", "Brit", "Business",
-  "Children", "Christmas", "Commercial", "Concert", "Confirmation", "Couples", "Dance",
-  "Editorial", "Elopement", "Engagement", "Equine", "Event", "Family", "Farewell",
-  "Film", "First Communion", "Food", "General", "Graduation", "Headshots", "Holidays",
-  "Interiors", "Landscape", "Lifestyle", "Live Music", "Look Book", "Maternity",
-  "Milestones", "Mini Session", "Modeling", "Newborn", "Other", "Outdoor",
-  "Passion Portrait", "Personal Branding", "Pets", "Photo Booth", "Portraits",
-  "Pre-Wedding", "Products", "Proposal", "Quinceanera", "Real Estate",
-  "Rehearsal Dinner", "Religious", "School", "Seniors", "Sport", "Styled Shoots",
-  "Theater", "Travel", "Video", "Vow Renewal", "Wedding", "Workshop"
-];
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
+import { GALLERY_TYPES } from "@/constants/gallery-types";
 
 interface CreateGalleryDialogProps {
   open: boolean;
@@ -90,8 +77,7 @@ export const CreateGalleryDialog = ({
       // Upload cover image if provided
       if (coverImage) {
         const fileExt = coverImage.name.split(".").pop();
-        const fileName = `${slug}-cover.${fileExt}`;
-        const filePath = `covers/${fileName}`;
+        const filePath = `${slug}/cover.${fileExt}`;
 
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('r2-presigned-url', {
           body: { fileName: filePath, contentType: coverImage.type }

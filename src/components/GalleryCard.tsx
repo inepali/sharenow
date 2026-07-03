@@ -16,18 +16,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
+import { getR2Url, formatBytes } from "@/lib/r2";
+import type { Gallery } from "@/types";
 
 interface GalleryCardProps {
-  gallery: {
-    id: string;
-    title: string;
-    gallery_type: string | null;
-    wedding_date: string | null;
-    slug: string;
-    is_active: boolean;
-    cover_image_path: string | null;
-    access_pin: string | null;
-  };
+  gallery: Gallery;
   onUpdate: () => void;
 }
 
@@ -42,6 +35,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
   useEffect(() => {
     fetchGalleryStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gallery.id]);
 
   const fetchGalleryStats = async () => {
@@ -67,18 +61,9 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
     }
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
-  };
-
   const getCoverImageUrl = () => {
     if (!gallery.cover_image_path) return null;
-    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-    return `${publicUrl}/${gallery.cover_image_path}`;
+    return getR2Url(gallery.cover_image_path);
   };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +82,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
     setCoverUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const filePath = `covers/${gallery.id}-cover.${fileExt}`;
+      const filePath = `${gallery.slug}/cover.${fileExt}`;
 
       const { data: edgeData, error: edgeError } = await supabase.functions.invoke("r2-presigned-url", {
         body: { fileName: filePath, contentType: file.type },
@@ -122,7 +107,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
       toast.success("Cover image uploaded!");
       onUpdate();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Cover upload error:", err);
       toast.error("Failed to upload cover image");
     } finally {
@@ -131,7 +116,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
     }
   };
 
-  const handleHardDelete = async () => {
+  const handleDelete = async () => {
 
     setLoading(true);
 
@@ -144,12 +129,12 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
       const fileNamesToDelete: string[] = [];
 
-      // Add cover image if it exists
-      if (gallery.cover_image_path) {
+      // Add cover image if it exists and is legacy (doesn't live inside gallery folder)
+      if (gallery.cover_image_path && !gallery.cover_image_path.startsWith(`${gallery.slug}/`)) {
         fileNamesToDelete.push(gallery.cover_image_path);
       }
 
-      // 2. Fetch all photos for these sections
+      // 2. Fetch all photos for these sections to get legacy files
       if (sections && sections.length > 0) {
         const sectionIds = sections.map(s => s.id);
         const { data: photos } = await supabase
@@ -158,19 +143,53 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
           .in("section_id", sectionIds);
 
         if (photos && photos.length > 0) {
-          fileNamesToDelete.push(...photos.map(p => p.storage_path));
+          photos.forEach((p) => {
+            // If it starts with slug prefix, it is deleted by the prefix purge.
+            // Otherwise, it's a legacy photo outside the slug folder, so list and delete manually.
+            if (!p.storage_path.startsWith(`${gallery.slug}/`)) {
+              const parts = p.storage_path.split("/");
+              if (parts.length === 5 && parts[0] === "Gallery") {
+                const fileName = parts.pop() || "";
+                const dirPath = parts.join("/");
+                const dotIndex = fileName.lastIndexOf(".");
+                const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+                
+                const thumbName = baseName === "original" ? "thumb.webp" : `${baseName}-sm.webp`;
+                const mediumName = baseName === "original" ? "medium.webp" : `${baseName}-md.webp`;
+                const largeName = baseName === "original" ? "large.webp" : `${baseName}-lg.webp`;
+
+                fileNamesToDelete.push(
+                  p.storage_path,
+                  `${dirPath}/${largeName}`,
+                  `${dirPath}/${mediumName}`,
+                  `${dirPath}/${thumbName}`
+                );
+              } else {
+                fileNamesToDelete.push(p.storage_path);
+              }
+            }
+          });
         }
       }
 
-      // 3. Delete files from R2
+      // 3. Delete files by prefix (purges the entire gallery slug directory)
+      const { error: prefixError } = await supabase.functions.invoke('r2-delete-object', {
+        body: { prefix: `${gallery.slug}/` }
+      });
+
+      if (prefixError) {
+        console.error("Failed to delete gallery folder prefix from R2:", prefixError);
+      }
+
+      // 4. Delete legacy file list from R2 if any
       if (fileNamesToDelete.length > 0) {
-        const { error: edgeError } = await supabase.functions.invoke('r2-delete-object', {
+        const { error: listError } = await supabase.functions.invoke('r2-delete-object', {
           body: { fileNames: fileNamesToDelete }
         });
 
-        if (edgeError) {
-          console.error("Failed to delete gallery photos from R2:", edgeError);
-          toast.error("Warning: Some photos could not be deleted from storage");
+        if (listError) {
+          console.error("Failed to delete legacy gallery photos from R2:", listError);
+          toast.error("Warning: Some legacy photos could not be deleted from storage");
         }
       }
 
@@ -184,7 +203,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
       toast.success("Gallery deleted");
       onUpdate();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting gallery:", error);
       toast.error("Failed to delete gallery");
     } finally {
@@ -193,25 +212,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
     }
   };
 
-  const handleSoftDelete = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from("galleries")
-        .update({ is_active: false })
-        .eq("id", gallery.id);
 
-      if (error) throw error;
-      toast.success("Gallery safely archived (hidden from public)");
-      onUpdate();
-    } catch (error) {
-      console.error("Error archiving gallery:", error);
-      toast.error("Failed to archive gallery");
-    } finally {
-      setLoading(false);
-      setIsDeleteDialogOpen(false);
-    }
-  };
 
   const galleryUrl = `${window.location.origin}/gallery/${gallery.slug}`;
   const coverUrl = getCoverImageUrl();
@@ -333,36 +334,15 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Gallery?</AlertDialogTitle>
-                <AlertDialogDescription className="space-y-4 pt-2">
-                  <p>How would you like to delete <span className="font-semibold text-foreground">{gallery.title}</span>?</p>
-
-                  <div className="bg-muted p-4 rounded-md space-y-2">
-                    <h4 className="flex items-center gap-2 font-medium text-foreground">
-                      <Archive className="w-4 h-4" />
-                      Archive (Soft Delete)
-                    </h4>
-                    <p className="text-sm">Safely hides the gallery from your clients and the public URL, but keeps all photos and data intact in your dashboard.</p>
-                  </div>
-
-                  <div className="bg-destructive/10 p-4 rounded-md space-y-2">
-                    <h4 className="flex items-center gap-2 font-medium text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                      Permanent Delete
-                    </h4>
-                    <p className="text-sm">Permanently destroys the gallery record and purges all {photoCount || 'associated'} image files from Cloudflare R2 storage. Cannot be undone.</p>
-                  </div>
+                <AlertDialogDescription className="pt-2">
+                  Are you sure you want to delete <span className="font-semibold text-foreground">{gallery.title}</span>? This will permanently delete the gallery and purge all associated photo files from Cloudflare R2 storage. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-2">
+              <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <Button variant="default" onClick={handleSoftDelete} disabled={loading}>
-                    Archive Gallery
-                  </Button>
-                  <Button variant="destructive" onClick={handleHardDelete} disabled={loading}>
-                    Delete Forever
-                  </Button>
-                </div>
+                <Button variant="destructive" onClick={handleDelete} disabled={loading}>
+                  {loading ? "Deleting..." : "Delete Gallery"}
+                </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

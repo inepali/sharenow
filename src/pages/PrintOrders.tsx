@@ -1,87 +1,13 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, ExternalLink } from "lucide-react";
-
-interface OrderItem {
-  quantity: number;
-  productName: string;
-  customerPrice: number;
-}
-
-interface RevenueBreakdown {
-  photographerEarning: number;
-  wholesale: number;
-  platformEarning: number;
-}
-
-interface Order {
-  id: string;
-  order_number: string;
-  gallery: { title: string } | null;
-  created_at: string;
-  status: string;
-  customer_name: string;
-  customer_email: string;
-  total_amount: number;
-  revenue_breakdown: RevenueBreakdown | null;
-  tracking_url: string | null;
-  items: OrderItem[] | null;
-}
+import { useOrders } from "@/hooks/use-orders";
 
 const PrintOrders = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-    fetchOrders();
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("print_orders")
-        .select(`
-          *,
-          gallery:gallery_id (
-            title
-          )
-        `)
-        .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Cast the data to Order[] since Supabase returns Json for jsonb columns
-      const typedData = (data || []).map(order => ({
-        ...order,
-        revenue_breakdown: order.revenue_breakdown as unknown as RevenueBreakdown | null,
-        items: order.items as unknown as OrderItem[] | null
-      })) as Order[];
-
-      setOrders(typedData);
-    } catch (error: unknown) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: orders = [], isLoading } = useOrders();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,7 +21,7 @@ const PrintOrders = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -193,7 +119,7 @@ const PrintOrders = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(order.tracking_url, '_blank')}
+                    onClick={() => window.open(order.tracking_url!, '_blank')}
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Track Shipment

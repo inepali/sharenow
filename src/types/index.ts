@@ -1,3 +1,5 @@
+export { type Gallery, type Section, type Photo, type SectionWithPhotos } from './gallery';
+
 export interface Product {
     id: string;
     name: string;
