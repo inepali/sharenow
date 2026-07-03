@@ -40,15 +40,29 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
 
   const fetchGalleryStats = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('r2-gallery-stats', {
-        body: { prefix: `${gallery.id}/` }
+      const prefixes = [
+        `${gallery.slug}/`,
+        `Gallery/${gallery.id}/`,
+        `${gallery.id}/`
+      ];
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch("http://localhost:3001/api/gallery-stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ""
+        },
+        body: JSON.stringify({ prefixes })
       });
 
-      if (error) {
-        console.error("Failed to fetch gallery stats:", error);
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats: ${response.status}`);
       }
+
+      const data = await response.json();
 
       if (data) {
         setPhotoCount(data.photoCount || 0);

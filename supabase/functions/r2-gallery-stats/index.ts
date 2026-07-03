@@ -18,10 +18,13 @@ serve(async (req: Request) => {
             throw new Error('Unauthorized');
         }
 
-        const { prefix } = await req.json();
+        const body = await req.json();
+        const { prefix, prefixes } = body;
 
-        if (!prefix) {
-            throw new Error('prefix is required');
+        const targetPrefixes = prefixes && Array.isArray(prefixes) ? prefixes : (prefix ? [prefix] : []);
+
+        if (targetPrefixes.length === 0) {
+            throw new Error('prefix or prefixes array is required');
         }
 
         const accountId = Deno.env.get('R2_ACCOUNT_ID');
@@ -42,28 +45,42 @@ serve(async (req: Request) => {
             },
         });
 
-        // Use ListObjectsV2 to sum size and count
+        // Sum size and count for original photos under target prefixes
         let totalSize = 0;
         let photoCount = 0;
-        let isTruncated = true;
-        let continuationToken: string | undefined = undefined;
 
-        while (isTruncated) {
-            const command = new ListObjectsV2Command({
-                Bucket: bucketName,
-                Prefix: prefix,
-                ContinuationToken: continuationToken,
-            });
+        for (const pref of targetPrefixes) {
+            let isTruncated = true;
+            let continuationToken: string | undefined = undefined;
 
-            const response = await S3.send(command);
+            while (isTruncated) {
+                const command = new ListObjectsV2Command({
+                    Bucket: bucketName,
+                    Prefix: pref,
+                    ContinuationToken: continuationToken,
+                });
 
-            if (response.Contents) {
-                photoCount += response.Contents.length;
-                totalSize += response.Contents.reduce((acc: number, obj: { Size?: number }) => acc + (obj.Size || 0), 0);
+                const response = await S3.send(command);
+
+                if (response.Contents) {
+                    const originals = response.Contents.filter((obj) => {
+                        if (!obj.Key) return false;
+                        const lowerKey = obj.Key.toLowerCase();
+                        // Filter out preview sizes
+                        if (lowerKey.endsWith("-lg.webp") || lowerKey.endsWith("-md.webp") || lowerKey.endsWith("-sm.webp")) return false;
+                        if (lowerKey.endsWith("/large.webp") || lowerKey.endsWith("/medium.webp") || lowerKey.endsWith("/thumb.webp")) return false;
+                        // Filter out cover images
+                        if (lowerKey.includes("/cover.") || lowerKey.includes("-cover.")) return false;
+                        return true;
+                    });
+
+                    photoCount += originals.length;
+                    totalSize += originals.reduce((acc: number, obj) => acc + (obj.Size || 0), 0);
+                }
+
+                isTruncated = response.IsTruncated || false;
+                continuationToken = response.NextContinuationToken;
             }
-
-            isTruncated = response.IsTruncated || false;
-            continuationToken = response.NextContinuationToken;
         }
 
         return new Response(

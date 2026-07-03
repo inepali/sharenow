@@ -4,7 +4,7 @@ import cors from "cors";
 import sharp from "sharp";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
 
 // Load environment variables
@@ -198,6 +198,68 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   } catch (error) {
     console.error("Upload API Error:", error);
     const message = error instanceof Error ? error.message : "Failed to process and upload image";
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/gallery-stats
+ * Returns the size and count of only original photos (excluding covers and preview sizes) for the given prefixes.
+ */
+app.post("/api/gallery-stats", async (req, res) => {
+  try {
+    const { prefixes } = req.body;
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: "Unauthorized: Missing Authorization header" });
+    }
+
+    if (!prefixes || !Array.isArray(prefixes) || prefixes.length === 0) {
+      return res.status(400).json({ error: "prefixes array is required" });
+    }
+
+    let totalSize = 0;
+    let photoCount = 0;
+
+    for (const pref of prefixes) {
+      let isTruncated = true;
+      let continuationToken = undefined;
+
+      while (isTruncated) {
+        const command = new ListObjectsV2Command({
+          Bucket: bucketName,
+          Prefix: pref,
+          ContinuationToken: continuationToken,
+        });
+
+        const response = await s3Client.send(command);
+
+        if (response.Contents) {
+          const originals = response.Contents.filter((obj) => {
+            if (!obj.Key) return false;
+            const lowerKey = obj.Key.toLowerCase();
+            // Filter out preview sizes
+            if (lowerKey.endsWith("-lg.webp") || lowerKey.endsWith("-md.webp") || lowerKey.endsWith("-sm.webp")) return false;
+            if (lowerKey.endsWith("/large.webp") || lowerKey.endsWith("/medium.webp") || lowerKey.endsWith("/thumb.webp")) return false;
+            // Filter out cover images
+            if (lowerKey.includes("/cover.") || lowerKey.includes("-cover.")) return false;
+            return true;
+          });
+
+          photoCount += originals.length;
+          totalSize += originals.reduce((acc, obj) => acc + (obj.Size || 0), 0);
+        }
+
+        isTruncated = response.IsTruncated || false;
+        continuationToken = response.NextContinuationToken;
+      }
+    }
+
+    res.status(200).json({ totalSize, photoCount });
+  } catch (error) {
+    console.error("Gallery Stats API Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to fetch gallery stats";
     res.status(500).json({ error: message });
   }
 });
