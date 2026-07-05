@@ -21,19 +21,21 @@ const Pricing = () => {
     {
       name: "Starter",
       tagline: "Perfect for solo photographers",
-      price: { monthly: 4.99, yearly: 49.90 },
+      price: { monthly: 2.99, yearly: 29.90 },
       stripePriceId: {
         monthly: "price_1SPxCSHE0DcMZ0rQrmZBkq4T",
         yearly: "price_1SPxCTHE0DcMZ0rQg0yXaCDx"
       },
-      storage: "500 GB",
+      storage: "10 GB per gallery",
       features: [
-        { text: "Up to 50 galleries per year", comingSoon: false },
+        { text: "10 free galleries included", comingSoon: false },
+        { text: "10 GB storage per gallery", comingSoon: false },
         { text: "Basic branding (logo + color)", comingSoon: false },
         { text: "Client download links", comingSoon: false },
         { text: "Basic analytics", comingSoon: false },
         { text: "Email/chat support", comingSoon: false },
-        { text: "500 GB storage", comingSoon: false }
+        { text: "Google Drive integration", comingSoon: false },
+        { text: "Dropbox integration", comingSoon: false }
       ],
       popular: false
     },
@@ -78,8 +80,10 @@ const Pricing = () => {
   ];
 
   const addOns = [
+    { name: "Additional Gallery", price: "$0.99 per gallery" },
     { name: "Extra Storage", price: "$10 per 500 GB/month" },
-    { name: "Additional Galleries", price: "$0.25 per gallery" },
+    { name: "Google Drive Integration", price: "Included with all plans" },
+    { name: "Dropbox Integration", price: "Included with all plans" },
     { name: "White Label Mobile App", price: "$99/month" },
     { name: "Print Shop Integration", price: "$49/month" },
     { name: "Premium Onboarding/Training", price: "$299 one-time" }

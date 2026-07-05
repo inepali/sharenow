@@ -32,6 +32,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_API_URL: https://upload.sharemyshoot.com
         run: npm run build
 
       - name: Detect output dir (CRA vs Vite)
