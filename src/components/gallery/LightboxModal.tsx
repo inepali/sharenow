@@ -70,7 +70,7 @@ export const LightboxModal = ({
 
       <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <img
-          src={getResponsiveUrls(photo.storage_path).large}
+          src={getResponsiveUrls(photo.storage_path, photo.thumbnail_path, photo.id).large}
           alt={photo.caption || "Preview"}
           className="max-h-[90vh] max-w-[90vw] object-contain"
         />

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { getApiUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,7 +50,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const response = await fetch("http://localhost:3001/api/gallery-stats", {
+      const response = await fetch(getApiUrl("/api/gallery-stats"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

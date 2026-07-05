@@ -1,4 +1,5 @@
 import { getR2Url } from "./r2";
+import { getApiUrl } from "./api";
 
 interface ResponsiveUrls {
   original: string;
@@ -11,7 +12,38 @@ interface ResponsiveUrls {
  * Given a storage path, returns responsive R2 URLs.
  * Detects new Gallery WebP multi-size format and falls back to original path for legacy images.
  */
-export function getResponsiveUrls(storagePath: string): ResponsiveUrls {
+export function getResponsiveUrls(
+  storagePath: string,
+  thumbnailPath?: string | null,
+  photoId?: string
+): ResponsiveUrls {
+  // Check if this is an external photo
+  if (storagePath.startsWith("dropbox:") || storagePath.startsWith("gdrive:")) {
+    const originalUrl = photoId 
+      ? getApiUrl(`/api/download-external?photoId=${photoId}`)
+      : storagePath;
+
+    const thumbUrl = thumbnailPath ? getR2Url(thumbnailPath) : originalUrl;
+    let mediumUrl = thumbUrl;
+    let largeUrl = thumbUrl;
+
+    if (thumbnailPath) {
+      const parts = thumbnailPath.split("/");
+      const fileName = parts.pop() || "";
+      const dirPath = parts.join("/");
+      const baseName = fileName.replace("-sm.webp", "");
+      mediumUrl = getR2Url(`${dirPath}/${baseName}-md.webp`);
+      largeUrl = getR2Url(`${dirPath}/${baseName}-lg.webp`);
+    }
+
+    return {
+      original: originalUrl,
+      thumb: thumbUrl,
+      medium: mediumUrl,
+      large: largeUrl,
+    };
+  }
+
   const parts = storagePath.split("/");
   
   // Newest format: gallerySlug/sectionTitle/photoId/filename.ext (4 segments)

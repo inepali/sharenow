@@ -16,6 +16,8 @@ import Subscription from "./pages/Subscription";
 import Store from "./pages/Store";
 import PrintOrders from "./pages/PrintOrders";
 
+import Settings from "./pages/Settings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -30,6 +32,7 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
             <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
             <Route path="/print-orders" element={<ProtectedRoute><PrintOrders /></ProtectedRoute>} />

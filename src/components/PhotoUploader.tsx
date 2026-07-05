@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getApiUrl } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,12 +24,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getR2Url } from "@/lib/r2";
+import { getResponsiveUrls } from "@/lib/images";
+import { ImportExternalDialog } from "./ImportExternalDialog";
 
 interface Photo {
   id: string;
   storage_path: string;
   display_order: number;
   caption: string | null;
+  thumbnail_path?: string | null;
 }
 
 interface Section {
@@ -52,6 +56,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [gallerySlug, setGallerySlug] = useState("");
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
   const [deletePhotoId, setDeletePhotoId] = useState<Photo | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     fetchPhotos();
@@ -133,7 +138,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open("POST", "http://localhost:3001/api/upload");
+          xhr.open("POST", getApiUrl("/api/upload"));
           
           if (token) {
             xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -278,7 +283,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-serif">Photos</h2>
-          <div>
+          <div className="flex gap-2">
             <input
               type="file"
               id="photo-upload"
@@ -293,12 +298,20 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                 disabled={uploading}
                 asChild
               >
-                <span>
+                <span className="cursor-pointer">
                   <Upload className="w-4 h-4 mr-2" />
                   {uploading ? `Uploading ${uploadFileIndex} of ${uploadTotal}…` : "Upload Photos"}
                 </span>
               </Button>
             </label>
+            <Button
+              variant="outline"
+              disabled={uploading}
+              onClick={() => setIsImportOpen(true)}
+            >
+              <FolderInput className="w-4 h-4 mr-2" />
+              Import Folder
+            </Button>
           </div>
         </div>
 
@@ -334,7 +347,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                     </Badge>
                   )}
                   <img
-                    src={getR2Url(photo.storage_path)}
+                    src={getResponsiveUrls(photo.storage_path, photo.thumbnail_path, photo.id).thumb}
                     alt={photo.caption || "Gallery photo"}
                     className="w-full h-auto object-cover"
                     loading="lazy"
@@ -423,6 +436,15 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <ImportExternalDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        galleryId={galleryId}
+        sectionId={sectionId}
+        gallerySlug={gallerySlug}
+        sectionTitle={sections.find((s) => s.id === sectionId)?.title || "section"}
+        onImportComplete={fetchPhotos}
+      />
     </div>
   );
 };

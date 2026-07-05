@@ -23,12 +23,15 @@ export const PhotoCard = ({
   onDownload,
   onClick,
 }: PhotoCardProps) => {
-  const urls = getResponsiveUrls(photo.storage_path);
-  const filename = photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`;
+  const urls = getResponsiveUrls(photo.storage_path, photo.thumbnail_path, photo.id);
+  const isExternal = photo.storage_path.startsWith("dropbox:") || photo.storage_path.startsWith("gdrive:");
+  const filename = isExternal 
+    ? photo.storage_path.split(":").pop() || `photo-${photo.id}.jpg`
+    : photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`;
 
   return (
     <div
-      className="relative group aspect-square rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+      className="relative group rounded-sm overflow-hidden shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
       onClick={onClick}
     >
       <img
@@ -36,7 +39,7 @@ export const PhotoCard = ({
         srcSet={`${urls.thumb} 300w, ${urls.medium} 1200w, ${urls.large} 2000w`}
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
         alt={photo.caption || "Gallery photo"}
-        className="w-full h-full object-cover"
+        className="w-full h-auto block"
         loading="lazy"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-smooth">

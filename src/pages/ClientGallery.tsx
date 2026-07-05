@@ -10,6 +10,7 @@ import JSZip from "jszip";
 import { useClientGallery, useFavorites } from "@/hooks/use-gallery-data";
 import { useQueryClient } from "@tanstack/react-query";
 import { getR2Url, downloadConcurrent } from "@/lib/r2";
+import { getResponsiveUrls } from "@/lib/images";
 import { GalleryHeader } from "@/components/gallery/GalleryHeader";
 import { PinGate } from "@/components/gallery/PinGate";
 import { PhotoCard } from "@/components/gallery/PhotoCard";
@@ -104,7 +105,7 @@ const ClientGallery = () => {
       const zip = new JSZip();
       for (const section of sections) {
         const sectionFolder = zip.folder(section.title);
-        const urls = section.photos.map(p => getR2Url(p.storage_path));
+        const urls = section.photos.map(p => getResponsiveUrls(p.storage_path, p.thumbnail_path, p.id).original);
         const blobs = await downloadConcurrent(urls, 5, (completed, total) => {
           if (completed % 10 === 0 || completed === total) {
             toast.info(`Downloading: ${completed}/${total} photos...`);
@@ -113,7 +114,10 @@ const ClientGallery = () => {
         section.photos.forEach((photo, i) => {
           const blob = blobs[i];
           if (blob) {
-            const filename = photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`;
+            const isExternal = photo.storage_path.startsWith("dropbox:") || photo.storage_path.startsWith("gdrive:");
+            const filename = isExternal 
+              ? photo.storage_path.split(":").pop() || `photo-${photo.id}.jpg`
+              : photo.storage_path.split("/").pop() || `photo-${photo.id}.jpg`;
             sectionFolder?.file(filename, blob);
           }
         });
@@ -162,18 +166,19 @@ const ClientGallery = () => {
   }
 
   const renderPhotoGrid = (photos: Photo[]) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+    <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 [column-fill:_balanced]">
       {photos.map((photo, index) => (
-        <PhotoCard
-          key={photo.id}
-          photo={photo}
-          isFavorited={favorites.has(photo.id)}
-          isPrintSelected={printSelection.has(photo.id)}
-          onToggleFavorite={toggleFavorite}
-          onTogglePrint={togglePrintSelection}
-          onDownload={downloadImage}
-          onClick={() => openPreview(photos, index)}
-        />
+        <div key={photo.id} className="break-inside-avoid mb-3">
+          <PhotoCard
+            photo={photo}
+            isFavorited={favorites.has(photo.id)}
+            isPrintSelected={printSelection.has(photo.id)}
+            onToggleFavorite={toggleFavorite}
+            onTogglePrint={togglePrintSelection}
+            onDownload={downloadImage}
+            onClick={() => openPreview(photos, index)}
+          />
+        </div>
       ))}
     </div>
   );

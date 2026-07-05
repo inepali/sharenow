@@ -24,6 +24,7 @@ export interface Photo {
   display_order: number;
   caption: string | null;
   section_id?: string;
+  thumbnail_path?: string | null;
 }
 
 export interface SectionWithPhotos extends Omit<Section, 'gallery_id'> {
