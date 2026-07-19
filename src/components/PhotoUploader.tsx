@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getApiUrl } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadPhoto } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -123,50 +123,16 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
         const currentSection = sections.find(s => s.id === sectionId);
         const sectionTitle = currentSection?.title || "section";
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("galleryId", galleryId);
-        formData.append("sectionId", sectionId);
-        formData.append("gallerySlug", gallerySlug);
-        formData.append("sectionTitle", sectionTitle);
-        
         const maxOrder = photos.reduce((max, p) => Math.max(max, p.display_order), -1);
-        formData.append("displayOrder", (maxOrder + i + 1).toString());
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("POST", getApiUrl("/api/upload"));
-          
-          if (token) {
-            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-          }
-
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-              setUploadProgress(Math.round((event.loaded / event.total) * 100));
-            }
-          };
-
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve();
-            } else {
-              let errorMsg = "Upload failed";
-              try {
-                const resJson = JSON.parse(xhr.responseText);
-                errorMsg = resJson.error || errorMsg;
-              } catch (e) {
-                // Ignore parse errors and keep default message
-              }
-              reject(new Error(errorMsg));
-            }
-          };
-
-          xhr.onerror = () => reject(new Error("Network error during upload"));
-          xhr.send(formData);
+        await uploadPhoto({
+          file,
+          galleryId,
+          sectionId,
+          gallerySlug,
+          sectionTitle,
+          displayOrder: maxOrder + i + 1,
+          onProgress: setUploadProgress,
         });
       }
 

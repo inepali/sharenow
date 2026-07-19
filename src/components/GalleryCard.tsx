@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { getApiUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,23 +46,13 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
         `${gallery.id}/`
       ];
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const response = await fetch(getApiUrl("/api/gallery-stats"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
-        },
-        body: JSON.stringify({ prefixes })
+      const { data, error } = await supabase.functions.invoke("r2-gallery-stats", {
+        body: { prefixes },
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.status}`);
+      if (error) {
+        throw error;
       }
-
-      const data = await response.json();
 
       if (data) {
         setPhotoCount(data.photoCount || 0);
