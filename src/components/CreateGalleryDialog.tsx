@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -13,6 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { GALLERY_TYPES } from "@/constants/gallery-types";
+import { useSubscription } from "@/hooks/use-subscription";
+import { useGalleries } from "@/hooks/use-galleries";
+import { AlertTriangle, Sparkles } from "lucide-react";
 
 interface CreateGalleryDialogProps {
   open: boolean;
@@ -25,11 +29,16 @@ export const CreateGalleryDialog = ({
   onOpenChange,
   onGalleryCreated,
 }: CreateGalleryDialogProps) => {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [galleryType, setGalleryType] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { tier, limits } = useSubscription();
+  const { data: galleries = [] } = useGalleries();
+  const limitReached = galleries.length >= limits.maxGalleries;
 
   const generateSlug = (text: string) => {
     return text
@@ -39,6 +48,11 @@ export const CreateGalleryDialog = ({
   };
 
   const handleCreate = async () => {
+    if (limitReached) {
+      toast.error(`Gallery limit reached for your ${tier} plan. Please upgrade to create more.`);
+      return;
+    }
+
     if (!title.trim()) {
       toast.error("Please enter a gallery title");
       return;
@@ -55,7 +69,7 @@ export const CreateGalleryDialog = ({
       }
 
       const slug = generateSlug(title) + "-" + Date.now().toString(36);
-      const accessPin = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0');
+      const accessPin = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, "0");
 
       const { error } = await supabase
         .from("galleries")
@@ -97,6 +111,33 @@ export const CreateGalleryDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
+          {limitReached ? (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-amber-900 dark:text-amber-200">
+                    Gallery Limit Reached ({galleries.length}/{limits.maxGalleries})
+                  </h4>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    Your {tier} plan allows up to {limits.maxGalleries} {limits.maxGalleries === 1 ? "gallery" : "galleries"}. Upgrade your plan to create more galleries.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="w-full gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/pricing");
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                Upgrade Plan (30 Days Free)
+              </Button>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label htmlFor="title">Gallery Title *</Label>
             <Input
@@ -104,12 +145,13 @@ export const CreateGalleryDialog = ({
               placeholder="Summer Wedding Collection"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              disabled={limitReached}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="gallery-type">Gallery Type</Label>
-            <Select value={galleryType} onValueChange={setGalleryType}>
+            <Select value={galleryType} onValueChange={setGalleryType} disabled={limitReached}>
               <SelectTrigger id="gallery-type">
                 <SelectValue placeholder="Select gallery type" />
               </SelectTrigger>
@@ -130,6 +172,7 @@ export const CreateGalleryDialog = ({
               type="date"
               value={weddingDate}
               onChange={(e) => setWeddingDate(e.target.value)}
+              disabled={limitReached}
             />
           </div>
 
@@ -141,6 +184,7 @@ export const CreateGalleryDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
+              disabled={limitReached}
             />
           </div>
 
@@ -154,7 +198,7 @@ export const CreateGalleryDialog = ({
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={loading}
+              disabled={loading || limitReached}
               className="flex-1"
             >
               {loading ? "Creating..." : "Create Gallery"}
@@ -164,4 +208,4 @@ export const CreateGalleryDialog = ({
       </DialogContent>
     </Dialog>
   );
-}
+};

@@ -6,15 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/use-subscription";
 import logo from "@/assets/logo.png";
 
 const Pricing = () => {
   const navigate = useNavigate();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { isSubscribed, tier: userTier } = useSubscription();
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email || null);
+    });
   }, []);
 
   const tiers = [
@@ -93,6 +99,13 @@ const Pricing = () => {
     setLoadingTier(tier.name);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.info("Please sign in or create an account to subscribe");
+        navigate("/auth?redirect=/pricing");
+        return;
+      }
+
       const priceId = tier.stripePriceId[billingCycle];
 
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
@@ -112,7 +125,8 @@ const Pricing = () => {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Failed to start checkout. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to start checkout. Please try again.';
+      toast.error(msg);
     } finally {
       setLoadingTier(null);
     }
@@ -133,12 +147,21 @@ const Pricing = () => {
               Back
             </Button>
             <img src={logo} alt="Share My Shoot" className="w-10 h-10" />
-            <Button
-              variant="outline"
-              onClick={() => navigate("/auth")}
-            >
-              Sign In
-            </Button>
+            {userEmail ? (
+              <Button
+                variant="outline"
+                onClick={() => navigate("/dashboard")}
+              >
+                Dashboard
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => navigate("/auth")}
+              >
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -216,14 +239,28 @@ const Pricing = () => {
                   )}
                 </div>
 
-                <Button
-                  className="w-full mb-6"
-                  variant={tier.popular ? "default" : "outline"}
-                  onClick={() => handleSubscribe(tier)}
-                  disabled={loadingTier === tier.name}
-                >
-                  {loadingTier === tier.name ? "Processing..." : "Start 30 Days Free"}
-                </Button>
+                {isSubscribed && userTier.toLowerCase() === tier.name.toLowerCase() ? (
+                  <Button
+                    className="w-full mb-6"
+                    variant="outline"
+                    onClick={() => navigate("/subscription")}
+                  >
+                    Current Plan &mdash; Manage
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full mb-6"
+                    variant={tier.popular ? "default" : "outline"}
+                    onClick={() => handleSubscribe(tier)}
+                    disabled={loadingTier === tier.name}
+                  >
+                    {loadingTier === tier.name
+                      ? "Processing..."
+                      : isSubscribed
+                      ? `Switch to ${tier.name}`
+                      : "Start 30 Days Free"}
+                  </Button>
+                )}
 
                 <div className="space-y-3">
                   {tier.features.map((feature, index) => (

@@ -1,17 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Images } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Images, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { GalleryCard } from "@/components/GalleryCard";
 import { CreateGalleryDialog } from "@/components/CreateGalleryDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useGalleries, useUserEmail, useInvalidateGalleries } from "@/hooks/use-galleries";
+import { useSubscription, useInvalidateSubscription } from "@/hooks/use-subscription";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { data: galleries = [], isLoading } = useGalleries();
   const { data: userEmail = "" } = useUserEmail();
   const invalidateGalleries = useInvalidateGalleries();
+  const { tier, isSubscribed, isTrialing, limits } = useSubscription();
+  const invalidateSubscription = useInvalidateSubscription();
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    const tierName = searchParams.get("tier");
+
+    if (sessionId) {
+      toast.success(
+        `🎉 Subscription Activated! Your ${tierName || "Starter"} plan (30-day trial) is now active.`
+      );
+      invalidateSubscription();
+      // Clean up URL parameters cleanly without page refresh
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [searchParams, invalidateSubscription]);
 
   const handleGalleryCreated = () => {
     setShowCreateDialog(false);
@@ -34,13 +56,35 @@ const Dashboard = () => {
       <AppHeader userEmail={userEmail} />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-serif mb-2">Your Galleries</h2>
-            <p className="text-muted-foreground">
-              Create and manage your wedding photo galleries
+            <div className="flex items-center gap-3 mb-1">
+              <h2 className="text-3xl font-serif">Your Galleries</h2>
+              <Badge
+                variant={isSubscribed ? "default" : "secondary"}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate("/subscription")}
+                title="Click to view subscription"
+              >
+                {tier} {isTrialing ? "(Trial)" : ""}
+              </Badge>
+              {!isSubscribed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-primary gap-1 px-2"
+                  onClick={() => navigate("/pricing")}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Upgrade
+                </Button>
+              )}
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {galleries.length} of {limits.maxGalleries === Infinity ? "unlimited" : limits.maxGalleries} galleries used &bull; {limits.storageLimitDisplay} storage
             </p>
           </div>
+
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="w-4 h-4 mr-2" />
             New Gallery
