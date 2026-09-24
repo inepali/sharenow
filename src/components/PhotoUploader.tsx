@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Upload, X, Download, Image, FolderInput } from "lucide-react";
 import {
@@ -57,11 +58,13 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null);
   const [deletePhotoId, setDeletePhotoId] = useState<Photo | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchPhotos();
     fetchGalleryCover();
     fetchAllSections();
+    setSelectedPhotoIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
@@ -120,9 +123,6 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
         setUploadProgress(0);
         const file = files[i];
 
-        const currentSection = sections.find(s => s.id === sectionId);
-        const sectionTitle = currentSection?.title || "section";
-
         const maxOrder = photos.reduce((max, p) => Math.max(max, p.display_order), -1);
 
         await uploadPhoto({
@@ -130,7 +130,6 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           galleryId,
           sectionId,
           gallerySlug,
-          sectionTitle,
           displayOrder: maxOrder + i + 1,
           onProgress: setUploadProgress,
         });
@@ -152,7 +151,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
   const handleDelete = async (photo: Photo) => {
     let fileNames = [photo.storage_path];
     const parts = photo.storage_path.split("/");
-    if (parts.length === 4) {
+    if (parts.length === 3 || parts.length === 4) {
       const fileName = parts.pop() || "";
       const dirPath = parts.join("/");
       const dotIndex = fileName.lastIndexOf(".");
@@ -233,6 +232,40 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     }
   };
 
+  const toggleSelectPhoto = (photoId: string) => {
+    setSelectedPhotoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(photoId)) {
+        next.delete(photoId);
+      } else {
+        next.add(photoId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedPhotoIds((prev) =>
+      prev.size === photos.length ? new Set() : new Set(photos.map((p) => p.id))
+    );
+  };
+
+  const handleBulkMove = async (targetSectionId: string) => {
+    const ids = Array.from(selectedPhotoIds);
+    const { error } = await supabase
+      .from("photos")
+      .update({ section_id: targetSectionId })
+      .in("id", ids);
+
+    if (error) {
+      toast.error("Failed to move photos");
+    } else {
+      toast.success(`${ids.length} photo(s) moved successfully`);
+      setSelectedPhotoIds(new Set());
+      fetchPhotos();
+    }
+  };
+
   if (loading) {
     return (
       <Card className="p-8 text-center">
@@ -248,7 +281,18 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
     <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-serif">Photos</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-serif">Photos</h2>
+            {photos.length > 0 && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline hover:text-foreground"
+                onClick={toggleSelectAll}
+              >
+                {selectedPhotoIds.size === photos.length ? "Deselect all" : "Select all"}
+              </button>
+            )}
+          </div>
           <div className="flex gap-2">
             <input
               type="file"
@@ -292,6 +336,35 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           </div>
         )}
 
+        {selectedPhotoIds.size > 0 && (
+          <div className="flex items-center justify-between gap-2 mb-4 p-2 rounded-md bg-muted">
+            <span className="text-sm font-medium">{selectedPhotoIds.size} selected</span>
+            <div className="flex items-center gap-2">
+              {otherSections.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="secondary">
+                      <FolderInput className="w-4 h-4 mr-2" />
+                      Move to...
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Move to...</div>
+                    {otherSections.map((section) => (
+                      <DropdownMenuItem key={section.id} onClick={() => handleBulkMove(section.id)}>
+                        {section.title}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setSelectedPhotoIds(new Set())}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
         {photos.length === 0 ? (
           <div className="text-center py-12 gradient-card rounded-lg">
             <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -301,6 +374,7 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
           <div className="columns-2 md:columns-4 gap-2 space-y-2">
             {photos.map((photo) => {
               const isCover = currentCoverPath === photo.storage_path;
+              const isSelected = selectedPhotoIds.has(photo.id);
 
               return (
                 <div
@@ -312,6 +386,19 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                       Cover Image
                     </Badge>
                   )}
+                  <div
+                    className={`absolute top-2 right-2 z-20 rounded bg-white/90 p-1 transition-opacity ${
+                      isSelected || selectedPhotoIds.size > 0
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelectPhoto(photo.id)}
+                      aria-label="Select photo"
+                    />
+                  </div>
                   <img
                     src={getResponsiveUrls(photo.storage_path, photo.thumbnail_path, photo.id).thumb}
                     alt={photo.caption || "Gallery photo"}
@@ -319,30 +406,6 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-smooth flex flex-col items-center justify-center p-2">
-                    {/* Top Action Bar */}
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      {otherSections.length > 0 && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                              <FolderInput className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Move to...</div>
-                            {otherSections.map((section) => (
-                              <DropdownMenuItem
-                                key={section.id}
-                                onClick={() => handleMovePhoto(photo, section.id)}
-                              >
-                                {section.title}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-
                     {/* Bottom Action Bar */}
                     <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-2">
                       <div className="flex gap-2">
@@ -354,6 +417,26 @@ export const PhotoUploader = ({ sectionId, galleryId }: PhotoUploaderProps) => {
                         >
                           <Download className="w-4 h-4" />
                         </Button>
+                        {otherSections.length > 0 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="secondary" className="flex-1">
+                                <FolderInput className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Move to...</div>
+                              {otherSections.map((section) => (
+                                <DropdownMenuItem
+                                  key={section.id}
+                                  onClick={() => handleMovePhoto(photo, section.id)}
+                                >
+                                  {section.title}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                         <Button
                           size="sm"
                           variant="destructive"

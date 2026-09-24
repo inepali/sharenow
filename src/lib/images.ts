@@ -45,8 +45,25 @@ export function getResponsiveUrls(
   }
 
   const parts = storagePath.split("/");
-  
-  // Newest format: gallerySlug/sectionTitle/photoId/filename.ext (4 segments)
+
+  // Newest format: gallerySlug/photoId/filename.ext (3 segments) — photos
+  // uploaded directly under the album folder, not nested by section
+  if (parts.length === 3) {
+    const fileName = parts.pop() || "";
+    const dirPath = parts.join("/");
+
+    const dotIndex = fileName.lastIndexOf(".");
+    const baseName = dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
+
+    return {
+      original: getR2Url(storagePath),
+      thumb: getR2Url(`${dirPath}/${baseName}-sm.webp`),
+      medium: getR2Url(`${dirPath}/${baseName}-md.webp`),
+      large: getR2Url(`${dirPath}/${baseName}-lg.webp`),
+    };
+  }
+
+  // Previous format: gallerySlug/sectionTitle/photoId/filename.ext (4 segments)
   if (parts.length === 4) {
     const fileName = parts.pop() || "";
     const dirPath = parts.join("/");

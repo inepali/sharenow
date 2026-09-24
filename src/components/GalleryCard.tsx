@@ -11,12 +11,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ExternalLink, Edit, Trash2, Calendar, Users, Image, HardDrive, Archive, Lock, Camera } from "lucide-react";
+import { ExternalLink, Edit, Trash2, Calendar, Users, Image, HardDrive, Archive, Lock, Camera, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { getR2Url, formatBytes } from "@/lib/r2";
+import { AlbumUploadDialog } from "./AlbumUploadDialog";
 import type { Gallery } from "@/types";
 
 interface GalleryCardProps {
@@ -30,6 +31,7 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
   const [totalSize, setTotalSize] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -317,6 +319,15 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
             variant="outline"
             size="sm"
             className="flex-1"
+            onClick={() => setIsUploadOpen(true)}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
             onClick={() => navigate(`/manage/${gallery.id}`)}
           >
             <Edit className="w-4 h-4 mr-2" />
@@ -368,6 +379,15 @@ export const GalleryCard = ({ gallery, onUpdate }: GalleryCardProps) => {
           </div>
         </div>
       </div>
+
+      <AlbumUploadDialog
+        open={isUploadOpen}
+        onOpenChange={(open) => {
+          setIsUploadOpen(open);
+          if (!open) fetchGalleryStats();
+        }}
+        gallery={gallery}
+      />
     </Card>
   );
 };

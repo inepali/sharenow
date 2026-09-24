@@ -402,6 +402,7 @@ export type Database = {
           display_order: number
           gallery_id: string
           id: string
+          is_default: boolean
           title: string
         }
         Insert: {
@@ -409,6 +410,7 @@ export type Database = {
           display_order?: number
           gallery_id: string
           id?: string
+          is_default?: boolean
           title: string
         }
         Update: {
@@ -416,6 +418,7 @@ export type Database = {
           display_order?: number
           gallery_id?: string
           id?: string
+          is_default?: boolean
           title?: string
         }
         Relationships: [

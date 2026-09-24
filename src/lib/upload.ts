@@ -15,7 +15,6 @@ export interface UploadPhotoParams {
   sectionId: string;
   displayOrder: number;
   gallerySlug: string;
-  sectionTitle: string;
   caption?: string;
   onProgress?: (percent: number) => void;
 }
@@ -151,7 +150,7 @@ function putWithProgress(
  * presigned URLs, then insert the photo row. No upload server involved.
  */
 export async function uploadPhoto(params: UploadPhotoParams): Promise<UploadedPhoto> {
-  const { file, galleryId, sectionId, displayOrder, gallerySlug, sectionTitle, caption, onProgress } = params;
+  const { file, galleryId, sectionId, displayOrder, gallerySlug, caption, onProgress } = params;
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
@@ -176,11 +175,12 @@ export async function uploadPhoto(params: UploadPhotoParams): Promise<UploadedPh
   const originalExt = dotIndex !== -1 ? originalName.substring(dotIndex + 1).toLowerCase() : "jpg";
   const cleanBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, "_");
 
+  // Photos live under the album (gallery) folder directly, not nested by
+  // section — section is purely a DB-level grouping via photos.section_id.
   let basePath = `Gallery/${galleryId}/${sectionId}/${photoId}`;
-  if (gallerySlug && sectionTitle) {
+  if (gallerySlug) {
     const cleanGallerySlug = gallerySlug.replace(/[^a-zA-Z0-9-_]/g, "_");
-    const cleanSectionTitle = sectionTitle.replace(/[^a-zA-Z0-9-_]/g, "_");
-    basePath = `${cleanGallerySlug}/${cleanSectionTitle}/${photoId}`;
+    basePath = `${cleanGallerySlug}/${photoId}`;
   }
 
   const originalKey = `${basePath}/${cleanBaseName}.${originalExt}`;
